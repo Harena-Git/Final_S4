@@ -1,91 +1,162 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestion des fonds</title>
   <link rel="stylesheet" href="theme.css">
 </head>
-
-<body class="fixed-header">
+<body>
   <header>
     <nav>
       <ul>
-      <li><a href="index.html">Accueil</a></li>
-      <li><a href="fonds.html">Gestion des fonds</a></li>
-      <li><a href="loan_types.html">Gestion des types de prêt</a></li>
-      <li><a href="client_loans.html">Gestion des prêts clients</a></li>
-      <li><a href="interest_earned.html">Intérêts gagnés par mois</a></li>
-    </ul>
-  </nav>
+        <li><a href="index.html">Accueil</a></li>
+        <li><a href="fonds.html">Gestion des fonds</a></li>
+        <li><a href="loan_types.html">Gestion des types de prêt</a></li>
+        <li><a href="client_loans.html">Gestion des prêts clients</a></li>
+        <li><a href="interest_earned.html">Intérêts gagnés</a></li>
+      </ul>
+    </nav>
   </header>
 
-  <h1>Ajout de fond</h1>
-  <form id="ajout-fond-form">
-    <label for="description">Description :</label>
-    <input type="text" id="description" name="description" placeholder="Entrez une description" maxlength="50">
-    <label for="valeur">Montant du fond :</label>
-    <input type="number" id="valeur" name="valeur" placeholder="Entrez le montant" step="0.01" required>
-    <button type="submit">Ajouter Fond</button>
-  </form>
-  <div id="liste-fonds"></div>
+  <div class="container">
+    <main>
+      <h1>Gestion des fonds</h1>
+      
+      <div id="message-container"></div>
+      
+      <div class="card">
+        <h2>Ajouter un fond</h2>
+        <form id="ajout-fond-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="description">Description</label>
+              <input type="text" id="description" placeholder="Description du fond" maxlength="50">
+            </div>
+            
+            <div class="form-group">
+              <label for="valeur">Montant (Ar)</label>
+              <input type="number" id="valeur" step="0.01" min="0" required>
+            </div>
+          </div>
+          
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+              <span id="submit-text">Ajouter</span>
+              <span id="submit-loading" class="loading" style="display: none;"></span>
+            </button>
+            <a href="index.html" class="btn btn-secondary">Retour</a>
+          </div>
+        </form>
+      </div>
+      
+      <div class="card">
+        <h2>Liste des fonds</h2>
+        <div id="liste-fonds" class="table-responsive">
+          <p>Chargement en cours...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer>
+    <p>© 2023 Etablissement financier - Gestion des fonds</p>
+  </footer>
 
   <script>
-    function chargerFonds() {
-      fetch('/ws/fonds')
-        .then(response => {
-          if (!response.ok) throw new Error(`Erreur réseau: ${response.status}`);
-          return response.text().then(text => JSON.parse(text));
-        })
-        .then(data => {
-          const liste = document.getElementById('liste-fonds');
-          liste.innerHTML = '<h2>Liste des fonds</h2>';
-          if (data.length === 0) {
-            liste.innerHTML += '<p>Aucun fond trouvé.</p>';
-            return;
-          }
-          let table = '<table><thead><tr><th>ID</th><th>Description</th><th>Montant (€)</th><th>Date d\'ajout</th></tr></thead><tbody>';
-          data.forEach(fond => {
-            table += `<tr><td>${fond.id}</td><td>${fond.description || 'Aucune'}</td><td>${fond.valeur}</td><td>${fond.date_ajout}</td></tr>`;
-          });
-          table += '</tbody></table>';
-          liste.innerHTML += table;
-        })
-        .catch(error => console.error('Erreur lors du chargement des fonds:', error));
+    function showMessage(message, type = 'success') {
+      const container = document.getElementById('message-container');
+      container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
     }
 
-    document.getElementById('ajout-fond-form').addEventListener('submit', function (e) {
+    function setLoading(loading) {
+      const btn = document.getElementById('submit-btn');
+      const text = document.getElementById('submit-text');
+      const spinner = document.getElementById('submit-loading');
+      
+      btn.disabled = loading;
+      text.style.display = loading ? 'none' : 'inline-block';
+      spinner.style.display = loading ? 'inline-block' : 'none';
+    }
+
+    function chargerFonds() {
+      const container = document.getElementById('liste-fonds');
+      container.innerHTML = '<p>Chargement en cours...</p>';
+      
+      fetch('/ws/fonds')
+        .then(response => {
+          if (!response.ok) throw new Error('Erreur réseau');
+          return response.json();
+        })
+        .then(data => {
+          if (data.length === 0) {
+            container.innerHTML = '<p>Aucun fond disponible</p>';
+            return;
+          }
+          
+          let html = `
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Description</th>
+                  <th>Montant</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+          
+          data.forEach(fond => {
+            html += `
+              <tr>
+                <td>${fond.id}</td>
+                <td>${fond.description || '-'}</td>
+                <td>${fond.valeur} Ar</td>
+                <td>${new Date(fond.date_ajout).toLocaleDateString()}</td>
+              </tr>
+            `;
+          });
+          
+          html += `</tbody></table>`;
+          container.innerHTML = html;
+        })
+        .catch(error => {
+          console.error(error);
+          container.innerHTML = `<p class="alert-error">${error.message}</p>`;
+        });
+    }
+
+    document.getElementById('ajout-fond-form').addEventListener('submit', function(e) {
       e.preventDefault();
+      setLoading(true);
+      
       const description = document.getElementById('description').value;
       const valeur = document.getElementById('valeur').value;
 
       fetch('/ws/fonds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: description, valeur: valeur })
+        body: JSON.stringify({ description, valeur })
       })
         .then(response => {
-          if (!response.ok) throw new Error(`Erreur réseau: ${response.status}`);
-          return response.text().then(text => JSON.parse(text));
+          if (!response.ok) throw new Error('Erreur lors de l\'ajout');
+          return response.json();
         })
         .then(data => {
-          alert(data.message || 'Fond ajouté avec succès');
-          document.getElementById('description').value = '';
-          document.getElementById('valeur').value = '';
+          showMessage(data.message || 'Fond ajouté avec succès');
+          document.getElementById('ajout-fond-form').reset();
           chargerFonds();
         })
-        .catch(error => console.error('Erreur lors de l\'ajout du fond:', error));
+        .catch(error => {
+          console.error(error);
+          showMessage(error.message, 'error');
+        })
+        .finally(() => setLoading(false));
     });
 
-    window.onload = function () {
-      chargerFonds();
-    };
+    window.addEventListener('DOMContentLoaded', chargerFonds);
   </script>
-
-  <button onclick="window.location.href='index.html'">Retour à l'accueil</button>
-  <br><br><br><br>
 </body>
-<footer>
-  <p>Etablissement financier et prêt bancaire - Gestion des fonds</p>
-</footer>
 </html>

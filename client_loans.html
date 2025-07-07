@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
   <meta charset="UTF-8">
-  <title>Gestion des prêts clients</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prêts clients</title>
   <link rel="stylesheet" href="theme.css">
 </head>
-
 <body>
   <header>
     <nav>
@@ -15,108 +14,194 @@
         <li><a href="fonds.html">Gestion des fonds</a></li>
         <li><a href="loan_types.html">Gestion des types de prêt</a></li>
         <li><a href="client_loans.html">Gestion des prêts clients</a></li>
-        <li><a href="interest_earned.html">Intérêts gagnés par mois</a></li>
+        <li><a href="interest_earned.html">Intérêts gagnés</a></li>
       </ul>
     </nav>
   </header>
-  <h1>Gestion des prêts clients</h1>
-  <form id="client-loan-form">
-    <label for="client-id">Client (ID):</label>
-    <input type="number" id="client-id" name="client-id" placeholder="Entrez l'ID du client" required>
-    <label for="loan-type-id">Type de prêt (ID):</label>
-    <input type="number" id="loan-type-id" name="loan-type-id" placeholder="Entrez l'ID du type de prêt" required>
-    <label for="fund-id">Type de fond (ID):</label>
-    <input type="number" id="fund-id" name="fund-id" placeholder="Entrez l'ID du fond" required>
-    <label for="amount">Montant :</label>
-    <input type="number" id="amount" name="amount" placeholder="Entrez le montant" step="0.01" required>
-    <label for="start-date">Date de début :</label>
-    <input type="date" id="start-date" name="start-date" required>
-    <label for="end-date">Date de fin :</label>
-    <input type="date" id="end-date" name="end-date">
-    <label for="status">Statut :</label>
-    <select id="status" name="status">
-      <option value="active" selected>Actif</option>
-      <option value="closed">Fermé</option>
-    </select>
-    <button type="submit">Ajouter Prêt Client</button>
-  </form>
-  <div id="client-loans-list"></div>
+
+  <div class="container">
+    <main>
+      <h1>Prêts clients</h1>
+      
+      <div id="message-container"></div>
+      
+      <div class="card">
+        <h2>Nouveau prêt client</h2>
+        <form id="client-loan-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="client-id">ID Client</label>
+              <input type="number" id="client-id" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="loan-type-id">Type de prêt (ID)</label>
+              <input type="number" id="loan-type-id" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fund-id">Fond (ID)</label>
+              <input type="number" id="fund-id" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="amount">Montant (€)</label>
+              <input type="number" id="amount" step="0.01" min="0" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="start-date">Date début</label>
+              <input type="date" id="start-date" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="end-date">Date fin (optionnel)</label>
+              <input type="date" id="end-date">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="status">Statut</label>
+            <select id="status">
+              <option value="active">Actif</option>
+              <option value="closed">Clôturé</option>
+            </select>
+          </div>
+          
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+              <span id="submit-text">Enregistrer</span>
+              <span id="submit-loading" class="loading" style="display: none;"></span>
+            </button>
+            <a href="index.html" class="btn btn-secondary">Annuler</a>
+          </div>
+        </form>
+      </div>
+      
+      <div class="card">
+        <h2>Liste des prêts clients</h2>
+        <div id="client-loans-list" class="table-responsive">
+          <p>Chargement en cours...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer>
+    <p>© 2023 Etablissement financier - Prêts clients</p>
+  </footer>
 
   <script>
+    function showMessage(message, type = 'success') {
+      const container = document.getElementById('message-container');
+      container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+
+    function setLoading(loading) {
+      const btn = document.getElementById('submit-btn');
+      const text = document.getElementById('submit-text');
+      const spinner = document.getElementById('submit-loading');
+      
+      btn.disabled = loading;
+      text.style.display = loading ? 'none' : 'inline-block';
+      spinner.style.display = loading ? 'inline-block' : 'none';
+    }
+
     function chargerClientLoans() {
+      const container = document.getElementById('client-loans-list');
+      container.innerHTML = '<p>Chargement en cours...</p>';
+      
       fetch('/ws/client_loans')
         .then(response => {
-          if (!response.ok) throw new Error(`Erreur réseau: ${response.status}`);
+          if (!response.ok) throw new Error('Erreur réseau');
           return response.json();
         })
         .then(data => {
-          const list = document.getElementById('client-loans-list');
-          list.innerHTML = '<h2>Liste des prêts clients</h2>';
           if (data.length === 0) {
-            list.innerHTML += '<p>Aucun prêt client trouvé.</p>';
+            container.innerHTML = '<p>Aucun prêt client enregistré</p>';
             return;
           }
-          let table = '<table><thead><tr><th>Client</th><th>Type de prêt</th><th>Type de fond</th><th>Montant</th><th>Date de début</th><th>Date de fin</th><th>Statut</th></tr></thead><tbody>';
+          
+          let html = `
+            <table>
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Type</th>
+                  <th>Fond</th>
+                  <th>Montant</th>
+                  <th>Début</th>
+                  <th>Fin</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+          
           data.forEach(loan => {
-            table += `<tr><td>${loan.client_id}</td><td>${loan.loan_type_id}</td><td>${loan.fund_id}</td><td>${loan.amount}</td><td>${loan.start_date}</td><td>${loan.end_date || ''}</td><td>${loan.status}</td></tr>`;
+            html += `
+              <tr>
+                <td>${loan.client_id}</td>
+                <td>${loan.loan_type_id}</td>
+                <td>${loan.fund_id}</td>
+                <td>${loan.amount} €</td>
+                <td>${new Date(loan.start_date).toLocaleDateString()}</td>
+                <td>${loan.end_date ? new Date(loan.end_date).toLocaleDateString() : '-'}</td>
+                <td>${loan.status === 'active' ? 'Actif' : 'Clôturé'}</td>
+              </tr>
+            `;
           });
-          table += '</tbody></table>';
-          list.innerHTML += table;
+          
+          html += `</tbody></table>`;
+          container.innerHTML = html;
         })
         .catch(error => {
-          console.error('Erreur lors du chargement des prêts clients:', error);
-          document.getElementById('client-loans-list').innerHTML = '<p>Erreur lors du chargement des prêts clients.</p>';
+          console.error(error);
+          container.innerHTML = `<p class="alert-error">${error.message}</p>`;
         });
     }
 
-    document.getElementById('client-loan-form').addEventListener('submit', function (e) {
+    document.getElementById('client-loan-form').addEventListener('submit', function(e) {
       e.preventDefault();
-      const clientId = document.getElementById('client-id').value;
-      const loanTypeId = document.getElementById('loan-type-id').value;
-      const fundId = document.getElementById('fund-id').value;
-      const amount = document.getElementById('amount').value;
-      const startDate = document.getElementById('start-date').value;
-      const endDate = document.getElementById('end-date').value;
-      const status = document.getElementById('status').value;
+      setLoading(true);
+      
+      const formData = {
+        client_id: document.getElementById('client-id').value,
+        loan_type_id: document.getElementById('loan-type-id').value,
+        fund_id: document.getElementById('fund-id').value,
+        amount: document.getElementById('amount').value,
+        start_date: document.getElementById('start-date').value,
+        end_date: document.getElementById('end-date').value || null,
+        status: document.getElementById('status').value
+      };
 
       fetch('/ws/client_loans', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: clientId,
-          loan_type_id: loanTypeId,
-          fund_id: fundId,
-          amount: amount,
-          start_date: startDate,
-          end_date: endDate,
-          status: status
-        })
+        body: JSON.stringify(formData)
       })
         .then(response => {
-          if (!response.ok) throw new Error(`Erreur réseau: ${response.status}`);
+          if (!response.ok) throw new Error('Erreur lors de l\'enregistrement');
           return response.json();
         })
         .then(data => {
-          alert(data.message || 'Prêt client ajouté avec succès');
+          showMessage(data.message || 'Prêt client enregistré');
           document.getElementById('client-loan-form').reset();
           chargerClientLoans();
         })
         .catch(error => {
-          console.error('Erreur lors de l\'ajout du prêt client:', error);
-          alert('Erreur lors de l\'ajout du prêt client');
-        });
+          console.error(error);
+          showMessage(error.message, 'error');
+        })
+        .finally(() => setLoading(false));
     });
 
-    window.onload = function () {
-      chargerClientLoans();
-    };
+    window.addEventListener('DOMContentLoaded', chargerClientLoans);
   </script>
-  <br>
-  <button onclick="window.location.href='index.html'">Retour à l'accueil</button>
 </body>
-<br><br><br><br>
-  <footer>
-    <p>Etablissement financier et prêt bancaire - Gestion des prêts clients</p>
-  </footer>
-
 </html>
