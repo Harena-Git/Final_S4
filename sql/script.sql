@@ -23,13 +23,6 @@ CREATE TABLE IF NOT EXISTS loan_types (
     interest_rate DECIMAL(5,2) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS loan_type_pourcentage (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    loan_type_id INT NOT NULL,
-    percentage DECIMAL(5,2) NOT NULL,
-    FOREIGN KEY (loan_type_id) REFERENCES loan_types(id)
-);
-
 CREATE TABLE IF NOT EXISTS client_loans (
     id INT AUTO_INCREMENT PRIMARY KEY,
     client_id INT NOT NULL,
@@ -40,4 +33,16 @@ CREATE TABLE IF NOT EXISTS client_loans (
     end_date DATE,
     status VARCHAR(50) DEFAULT 'active',
     FOREIGN KEY (fund_id) REFERENCES fonds(id)
+);
+
+CREATE TABLE IF NOT EXISTS remboursement (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    client_loan_id INT NOT NULL,
+    montant DECIMAL(10,2) NOT NULL,
+    date_remboursement DATE NOT NULL,
+    mode_paiement VARCHAR(50) DEFAULT 'espèces',
+    remarque TEXT,
+    FOREIGN KEY (client_loan_id) REFERENCES client_loans(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
