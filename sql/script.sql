@@ -27,8 +27,10 @@ CREATE TABLE IF NOT EXISTS client_loans (
     id INT AUTO_INCREMENT PRIMARY KEY,
     client_id INT NOT NULL,
     loan_type_id INT NOT NULL,
+    fund_id INT NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE,
-    status VARCHAR(50) DEFAULT 'active'
+    status VARCHAR(50) DEFAULT 'active',
+    FOREIGN KEY (fund_id) REFERENCES fonds(id)
 );

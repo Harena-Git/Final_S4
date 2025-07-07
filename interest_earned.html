@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Intérêts gagnés par mois</title>
+  <link rel="stylesheet" href="theme.css" />
+</head>
+<header>
+    <nav>
+      <ul>
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="fonds.html">Gestion des fonds</a></li>
+      <li><a href="loan_types.html">Gestion des types de prêt</a></li>
+      <li><a href="client_loans.html">Gestion des prêts clients</a></li>
+      <li><a href="interest_earned.html">Intérêts gagnés par mois</a></li>
+    </ul>
+  </nav>
+  </header>
+<body>
+    
+  <h1>Intérêts gagnés par mois</h1>
+
+  <form id="filter-form">
+    <label for="start-month">Mois/Année début :</label>
+    <input type="month" id="start-month" name="start-month" required />
+
+    <label for="end-month">Mois/Année fin :</label>
+    <input type="month" id="end-month" name="end-month" required />
+
+    <button type="submit">Filtrer</button>
+  </form>
+
+  <div id="results">
+    <table id="interest-table" border="1" style="border-collapse: collapse; margin-top: 20px; width: 100%;">
+      <thead>
+        <tr>
+          <th>Mois</th>
+          <th>Intérêts gagnés</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    document.getElementById('filter-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const startMonth = document.getElementById('start-month').value;
+      const endMonth = document.getElementById('end-month').value;
+
+      if (!startMonth || !endMonth) {
+        alert('Veuillez sélectionner les deux dates.');
+        return;
+      }
+
+      fetch(`/interest_earned?start=${startMonth}-01&end=${endMonth}-31`)
+        .then(response => {
+          if (!response.ok) throw new Error('Erreur réseau: ' + response.status);
+          return response.json();
+        })
+        .then(data => {
+          const tbody = document.querySelector('#interest-table tbody');
+          tbody.innerHTML = '';
+
+          if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2">Aucun résultat trouvé.</td></tr>';
+            return;
+          }
+
+          data.forEach(row => {
+            const tr = document.createElement('tr');
+            const monthTd = document.createElement('td');
+            monthTd.textContent = row.month;
+            const interestTd = document.createElement('td');
+            interestTd.textContent = parseFloat(row.interest_earned).toFixed(2) + ' €';
+            tr.appendChild(monthTd);
+            tr.appendChild(interestTd);
+            tbody.appendChild(tr);
+          });
+        })
+        .catch(error => {
+          alert('Erreur lors du chargement des données: ' + error.message);
+        });
+    });
+  </script>
+</body>
+
+<button onclick="window.location.href='index.html'">Retour à l'accueil</button>
+<br><br><br><br>
+</body>
+<footer>
+<p>Etablissement financier et prêt bancaire - Gestion des fonds</p>
+</footer>
+</html>

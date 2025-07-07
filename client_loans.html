@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Gestion des prêts clients</title>
+  <link rel="stylesheet" href="theme.css">
+</head>
+
+<body>
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Accueil</a></li>
+        <li><a href="fonds.html">Gestion des fonds</a></li>
+        <li><a href="loan_types.html">Gestion des types de prêt</a></li>
+        <li><a href="client_loans.html">Gestion des prêts clients</a></li>
+        <li><a href="interest_earned.html">Intérêts gagnés par mois</a></li>
+      </ul>
+    </nav>
+  </header>
+  <h1>Gestion des prêts clients</h1>
+  <form id="client-loan-form">
+    <label for="client-id">Client (ID):</label>
+    <input type="number" id="client-id" name="client-id" placeholder="Entrez l'ID du client" required>
+    <label for="loan-type-id">Type de prêt (ID):</label>
+    <input type="number" id="loan-type-id" name="loan-type-id" placeholder="Entrez l'ID du type de prêt" required>
+    <label for="fund-id">Type de fond (ID):</label>
+    <input type="number" id="fund-id" name="fund-id" placeholder="Entrez l'ID du fond" required>
+    <label for="amount">Montant :</label>
+    <input type="number" id="amount" name="amount" placeholder="Entrez le montant" step="0.01" required>
+    <label for="start-date">Date de début :</label>
+    <input type="date" id="start-date" name="start-date" required>
+    <label for="end-date">Date de fin :</label>
+    <input type="date" id="end-date" name="end-date">
+    <label for="status">Statut :</label>
+    <select id="status" name="status">
+      <option value="active" selected>Actif</option>
+      <option value="closed">Fermé</option>
+    </select>
+    <button type="submit">Ajouter Prêt Client</button>
+  </form>
+  <div id="client-loans-list"></div>
+
+  <script>
+    function chargerClientLoans() {
+      fetch('/ws/client_loans')
+        .then(response => {
+          if (!response.ok) throw new Error(`Erreur réseau: ${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          const list = document.getElementById('client-loans-list');
+          list.innerHTML = '<h2>Liste des prêts clients</h2>';
+          if (data.length === 0) {
+            list.innerHTML += '<p>Aucun prêt client trouvé.</p>';
+            return;
+          }
+          let table = '<table><thead><tr><th>Client</th><th>Type de prêt</th><th>Type de fond</th><th>Montant</th><th>Date de début</th><th>Date de fin</th><th>Statut</th></tr></thead><tbody>';
+          data.forEach(loan => {
+            table += `<tr><td>${loan.client_id}</td><td>${loan.loan_type_id}</td><td>${loan.fund_id}</td><td>${loan.amount}</td><td>${loan.start_date}</td><td>${loan.end_date || ''}</td><td>${loan.status}</td></tr>`;
+          });
+          table += '</tbody></table>';
+          list.innerHTML += table;
+        })
+        .catch(error => {
+          console.error('Erreur lors du chargement des prêts clients:', error);
+          document.getElementById('client-loans-list').innerHTML = '<p>Erreur lors du chargement des prêts clients.</p>';
+        });
+    }
+
+    document.getElementById('client-loan-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const clientId = document.getElementById('client-id').value;
+      const loanTypeId = document.getElementById('loan-type-id').value;
+      const fundId = document.getElementById('fund-id').value;
+      const amount = document.getElementById('amount').value;
+      const startDate = document.getElementById('start-date').value;
+      const endDate = document.getElementById('end-date').value;
+      const status = document.getElementById('status').value;
+
+      fetch('/ws/client_loans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: clientId,
+          loan_type_id: loanTypeId,
+          fund_id: fundId,
+          amount: amount,
+          start_date: startDate,
+          end_date: endDate,
+          status: status
+        })
+      })
+        .then(response => {
+          if (!response.ok) throw new Error(`Erreur réseau: ${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          alert(data.message || 'Prêt client ajouté avec succès');
+          document.getElementById('client-loan-form').reset();
+          chargerClientLoans();
+        })
+        .catch(error => {
+          console.error('Erreur lors de l\'ajout du prêt client:', error);
+          alert('Erreur lors de l\'ajout du prêt client');
+        });
+    });
+
+    window.onload = function () {
+      chargerClientLoans();
+    };
+  </script>
+  <br>
+  <button onclick="window.location.href='index.html'">Retour à l'accueil</button>
+</body>
+<br><br><br><br>
+  <footer>
+    <p>Etablissement financier et prêt bancaire - Gestion des prêts clients</p>
+  </footer>
+
+</html>

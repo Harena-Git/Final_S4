@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Serve existing files directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Redirect all other requests to ws/index.php for Flight PHP routing
+RewriteRule ^ ws/index.php [QSA,L]

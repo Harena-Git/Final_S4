@@ -1,27 +1,19 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 require 'vendor/autoload.php';
 require 'db.php';
+require 'routes/fonds_routes.php';
+require 'routes/loan_types_routes.php';
+require 'routes/client_loans_routes.php';
+require 'routes/interest_routes.php';
 
-// Définir les routes API avant tout
-require 'routes/etudiant_routes.php';
-require 'routes/fond_routes.php';
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
-// Route pour la page d'accueil
-Flight::route('GET /', function() {
-    Flight::sendFile('index.html');
-});
-
-// Gestion des erreurs 404 pour les API
-Flight::map('notFound', function() {
-    if (strpos(Flight::request()->url, '/api/') === 0) {
-        Flight::json(['error' => 'Endpoint non trouvé'], 404);
-    } else {
-        Flight::sendFile('index.html');
-    }
-});
+// Handle OPTIONS requests for CORS preflight
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 Flight::start();
