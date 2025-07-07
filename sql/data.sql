@@ -4,8 +4,8 @@ DELETE FROM loan_types;
 DELETE FROM fonds;
 DELETE FROM etudiant;
 
--- Insert sample etudiant data
-INSERT INTO etudiant (nom, prenom, email, age) VALUES
+-- Insert sample Client data
+INSERT INTO Client (nom, prenom, email, age) VALUES
 ('Dupont', 'Jean', 'jean.dupont@example.com', 35),
 ('Martin', 'Claire', 'claire.martin@example.com', 29),
 ('Durand', 'Paul', 'paul.durand@example.com', 42);

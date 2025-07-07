@@ -2,7 +2,7 @@ CREATE DATABASE tp_flight CHARACTER SET utf8mb4;
 
 USE tp_flight;
 
-CREATE TABLE etudiant (
+CREATE TABLE Client (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nom VARCHAR(100),
     prenom VARCHAR(100),
@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS loan_types (
     name VARCHAR(255) NOT NULL,
     interest_rate DECIMAL(5,2) NOT NULL,
 );
-
 
 CREATE TABLE IF NOT EXISTS client_loans (
     id INT AUTO_INCREMENT PRIMARY KEY,
