@@ -20,15 +20,9 @@ CREATE TABLE fonds (
 CREATE TABLE IF NOT EXISTS loan_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    interest_rate DECIMAL(5,2) NOT NULL
+    interest_rate DECIMAL(5,2) NOT NULL,
 );
 
-CREATE TABLE IF NOT EXISTS loan_type_pourcentage (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    loan_type_id INT NOT NULL,
-    percentage DECIMAL(5,2) NOT NULL,
-    FOREIGN KEY (loan_type_id) REFERENCES loan_types(id)
-);
 
 CREATE TABLE IF NOT EXISTS client_loans (
     id INT AUTO_INCREMENT PRIMARY KEY,
