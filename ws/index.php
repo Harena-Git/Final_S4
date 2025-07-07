@@ -4,7 +4,6 @@ require 'db.php';
 require 'routes/fonds_routes.php';
 require 'routes/loan_types_routes.php';
 require 'routes/client_loans_routes.php';
-require 'routes/interest_routes.php';
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
