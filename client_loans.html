@@ -116,7 +116,7 @@
       const container = document.getElementById('client-loans-list');
       container.innerHTML = '<p>Chargement en cours...</p>';
       
-      fetch('/ws/client_loans')
+      fetch('/Final_S4/ws/client_loans')
         .then(response => {
           if (!response.ok) throw new Error('Erreur réseau');
           return response.json();
