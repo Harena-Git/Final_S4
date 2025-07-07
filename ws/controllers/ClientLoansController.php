@@ -37,15 +37,14 @@ class ClientLoansController {
         }
     }
 
-public static function getAll() {
-    try {
-        $client_loans = ClientLoans::getAll();
-        Flight::json($client_loans);
-    } catch (Exception $e) {
-        Flight::json(['error' => $e->getMessage()], 500);
-        return; // Ajoutez ce return pour être sûr
+    public static function getAll() {
+        try {
+            $client_loans = ClientLoans::getAll();
+            Flight::json($client_loans);
+        } catch (Exception $e) {
+            Flight::json(['error' => $e->getMessage()], 500);
+        }
     }
-}
 
     public static function update($id) {
         $data = Flight::request()->data;
