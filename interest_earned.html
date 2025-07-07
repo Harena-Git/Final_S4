@@ -1,95 +1,141 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
-  <meta charset="UTF-8" />
-  <title>Intérêts gagnés par mois</title>
-  <link rel="stylesheet" href="theme.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intérêts gagnés</title>
+  <link rel="stylesheet" href="theme.css">
 </head>
-<header>
+<body>
+  <header>
     <nav>
       <ul>
-      <li><a href="index.html">Accueil</a></li>
-      <li><a href="fonds.html">Gestion des fonds</a></li>
-      <li><a href="loan_types.html">Gestion des types de prêt</a></li>
-      <li><a href="client_loans.html">Gestion des prêts clients</a></li>
-      <li><a href="interest_earned.html">Intérêts gagnés par mois</a></li>
-    </ul>
-  </nav>
+        <li><a href="index.html">Accueil</a></li>
+        <li><a href="fonds.html">Gestion des fonds</a></li>
+        <li><a href="loan_types.html">Gestion des types de prêt</a></li>
+        <li><a href="client_loans.html">Gestion des prêts clients</a></li>
+        <li><a href="interest_earned.html">Intérêts gagnés</a></li>
+      </ul>
+    </nav>
   </header>
-<body>
-    
-  <h1>Intérêts gagnés par mois</h1>
 
-  <form id="filter-form">
-    <label for="start-month">Mois/Année début :</label>
-    <input type="month" id="start-month" name="start-month" required />
-
-    <label for="end-month">Mois/Année fin :</label>
-    <input type="month" id="end-month" name="end-month" required />
-
-    <button type="submit">Filtrer</button>
-  </form>
-
-  <div id="results">
-    <table id="interest-table" border="1" style="border-collapse: collapse; margin-top: 20px; width: 100%;">
-      <thead>
-        <tr>
-          <th>Mois</th>
-          <th>Intérêts gagnés</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <div class="container">
+    <main>
+      <h1>Intérêts gagnés</h1>
+      
+      <div id="message-container"></div>
+      
+      <div class="card">
+        <h2>Filtrer par période</h2>
+        <form id="filter-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="start-month">Date début (Mois/Année)</label>
+              <input type="month" id="start-month" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="end-month">Date fin (Mois/Année)</label>
+              <input type="month" id="end-month" required>
+            </div>
+          </div>
+          
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+              <span id="submit-text">Rechercher</span>
+              <span id="submit-loading" class="loading" style="display: none;"></span>
+            </button>
+            <a href="index.html" class="btn btn-secondary">Retour</a>
+          </div>
+        </form>
+      </div>
+      
+      <div class="card">
+        <h2>Résultats</h2>
+        <div id="results" class="table-responsive">
+          <p>Sélectionnez une période pour afficher les résultats</p>
+        </div>
+      </div>
+    </main>
   </div>
 
+  <footer>
+    <p>© 2023 Etablissement financier - Intérêts gagnés</p>
+  </footer>
+
   <script>
-    document.getElementById('filter-form').addEventListener('submit', function (e) {
+    function showMessage(message, type = 'success') {
+      const container = document.getElementById('message-container');
+      container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+
+    function setLoading(loading) {
+      const btn = document.getElementById('submit-btn');
+      const text = document.getElementById('submit-text');
+      const spinner = document.getElementById('submit-loading');
+      
+      btn.disabled = loading;
+      text.style.display = loading ? 'none' : 'inline-block';
+      spinner.style.display = loading ? 'inline-block' : 'none';
+    }
+
+    document.getElementById('filter-form').addEventListener('submit', function(e) {
       e.preventDefault();
+      setLoading(true);
+      
       const startMonth = document.getElementById('start-month').value;
       const endMonth = document.getElementById('end-month').value;
 
       if (!startMonth || !endMonth) {
-        alert('Veuillez sélectionner les deux dates.');
+        showMessage('Veuillez sélectionner une période complète', 'error');
+        setLoading(false);
         return;
       }
 
-      fetch(`/interest_earned?start=${startMonth}-01&end=${endMonth}-31`)
+      const resultsContainer = document.getElementById('results');
+      resultsContainer.innerHTML = '<p>Recherche en cours...</p>';
+      
+      fetch(`/ws/interest_earned?start=${startMonth}-01&end=${endMonth}-31`)
         .then(response => {
-          if (!response.ok) throw new Error('Erreur réseau: ' + response.status);
+          if (!response.ok) throw new Error('Erreur lors de la recherche');
           return response.json();
         })
         .then(data => {
-          const tbody = document.querySelector('#interest-table tbody');
-          tbody.innerHTML = '';
-
           if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="2">Aucun résultat trouvé.</td></tr>';
+            resultsContainer.innerHTML = '<p>Aucun résultat pour cette période</p>';
             return;
           }
-
+          
+          let html = `
+            <table>
+              <thead>
+                <tr>
+                  <th>Mois</th>
+                  <th>Intérêts gagnés</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+          
           data.forEach(row => {
-            const tr = document.createElement('tr');
-            const monthTd = document.createElement('td');
-            monthTd.textContent = row.month;
-            const interestTd = document.createElement('td');
-            interestTd.textContent = parseFloat(row.interest_earned).toFixed(2) + ' €';
-            tr.appendChild(monthTd);
-            tr.appendChild(interestTd);
-            tbody.appendChild(tr);
+            html += `
+              <tr>
+                <td>${row.month}</td>
+                <td>${parseFloat(row.interest_earned).toFixed(2)} €</td>
+              </tr>
+            `;
           });
+          
+          html += `</tbody></table>`;
+          resultsContainer.innerHTML = html;
         })
         .catch(error => {
-          alert('Erreur lors du chargement des données: ' + error.message);
-        });
+          console.error(error);
+          resultsContainer.innerHTML = `<p class="alert-error">${error.message}</p>`;
+        })
+        .finally(() => setLoading(false));
     });
   </script>
 </body>
-
-<button onclick="window.location.href='index.html'">Retour à l'accueil</button>
-<br><br><br><br>
-</body>
-<footer>
-<p>Etablissement financier et prêt bancaire - Gestion des fonds</p>
-</footer>
 </html>

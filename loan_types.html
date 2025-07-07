@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
   <meta charset="UTF-8">
-  <title>Gestion des types de prêt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Types de prêt</title>
   <link rel="stylesheet" href="theme.css">
 </head>
-
 <body>
   <header>
     <nav>
@@ -15,83 +14,147 @@
         <li><a href="fonds.html">Gestion des fonds</a></li>
         <li><a href="loan_types.html">Gestion des types de prêt</a></li>
         <li><a href="client_loans.html">Gestion des prêts clients</a></li>
-        <li><a href="interest_earned.html">Intérêts gagnés par mois</a></li>
+        <li><a href="interest_earned.html">Intérêts gagnés</a></li>
       </ul>
     </nav>
   </header>
 
-  <h1>Création de type de prêt</h1>
-  <form id="loan-type-form">
-    <label for="loan-name">Nom du type de prêt : </label>
-    <input type="text" id="loan-name" name="loan-name" placeholder="Entrez le nom du type de prêt" required>
-    <label for="interest-rate">Taux d'intérêt (%) : </label>
-    <input type="number" id="interest-rate" name="interest-rate" placeholder="Entrez le taux d'intérêt" step="0.01" required>
-    <button type="submit">Ajouter Type de Prêt</button>
-  </form>
-  <div id="loan-types-list"></div>
+  <div class="container">
+    <main>
+      <h1>Types de prêt</h1>
+      
+      <div id="message-container"></div>
+      
+      <div class="card">
+        <h2>Nouveau type de prêt</h2>
+        <form id="loan-type-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="loan-name">Nom</label>
+              <input type="text" id="loan-name" placeholder="Ex: Prêt personnel" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="interest-rate">Taux d'intérêt (%)</label>
+              <input type="number" id="interest-rate" step="0.01" min="0" max="100" required>
+            </div>
+          </div>
+          
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+              <span id="submit-text">Enregistrer</span>
+              <span id="submit-loading" class="loading" style="display: none;"></span>
+            </button>
+            <a href="index.html" class="btn btn-secondary">Annuler</a>
+          </div>
+        </form>
+      </div>
+      
+      <div class="card">
+        <h2>Liste des types de prêt</h2>
+        <div id="loan-types-list" class="table-responsive">
+          <p>Chargement en cours...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer>
+    <p>© 2023 Etablissement financier - Types de prêt</p>
+  </footer>
 
   <script>
+    function showMessage(message, type = 'success') {
+      const container = document.getElementById('message-container');
+      container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+
+    function setLoading(loading) {
+      const btn = document.getElementById('submit-btn');
+      const text = document.getElementById('submit-text');
+      const spinner = document.getElementById('submit-loading');
+      
+      btn.disabled = loading;
+      text.style.display = loading ? 'none' : 'inline-block';
+      spinner.style.display = loading ? 'inline-block' : 'none';
+    }
+
     function chargerLoanTypes() {
+      const container = document.getElementById('loan-types-list');
+      container.innerHTML = '<p>Chargement en cours...</p>';
+      
       fetch('/ws/loan_types')
         .then(response => {
-          if (!response.ok) throw new Error(`Erreur réseau: ${response.status}`);
+          if (!response.ok) throw new Error('Erreur réseau');
           return response.json();
         })
         .then(data => {
-          const list = document.getElementById('loan-types-list');
-          list.innerHTML = '<h2>Liste des types de prêt</h2>';
           if (data.length === 0) {
-            list.innerHTML += '<p>Aucun type de prêt trouvé.</p>';
+            container.innerHTML = '<p>Aucun type de prêt enregistré</p>';
             return;
           }
-          let table = '<table><thead><tr><th>ID</th><th>Nom</th><th>Taux d\'intérêt (%)</th></tr></thead><tbody>';
+          
+          let html = `
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nom</th>
+                  <th>Taux</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+          
           data.forEach(type => {
-            table += `<tr><td>${type.id}</td><td>${type.name}</td><td>${type.interest_rate}</td></tr>`;
+            html += `
+              <tr>
+                <td>${type.id}</td>
+                <td>${type.name}</td>
+                <td>${type.interest_rate}%</td>
+              </tr>
+            `;
           });
-          table += '</tbody></table>';
-          list.innerHTML += table;
+          
+          html += `</tbody></table>`;
+          container.innerHTML = html;
         })
         .catch(error => {
-          console.error('Erreur lors du chargement des types de prêt:', error);
-          document.getElementById('loan-types-list').innerHTML = '<p>Erreur lors du chargement des types de prêt.</p>';
+          console.error(error);
+          container.innerHTML = `<p class="alert-error">${error.message}</p>`;
         });
     }
 
-    document.getElementById('loan-type-form').addEventListener('submit', function (e) {
+    document.getElementById('loan-type-form').addEventListener('submit', function(e) {
       e.preventDefault();
+      setLoading(true);
+      
       const name = document.getElementById('loan-name').value;
       const interestRate = document.getElementById('interest-rate').value;
 
-      fetch(']/ws/loan_types', {
+      fetch('/ws/loan_types', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name, interest_rate: interestRate })
+        body: JSON.stringify({ name, interest_rate: interestRate })
       })
         .then(response => {
-          if (!response.ok) throw new Error(`Erreur réseau: ${response.status}`);
+          if (!response.ok) throw new Error('Erreur lors de l\'enregistrement');
           return response.json();
         })
         .then(data => {
-          alert(data.message || 'Type de prêt ajouté avec succès');
-          document.getElementById('loan-name').value = '';
-          document.getElementById('interest-rate').value = '';
+          showMessage(data.message || 'Type de prêt enregistré');
+          document.getElementById('loan-type-form').reset();
           chargerLoanTypes();
         })
         .catch(error => {
-          console.error('Erreur lors de l\'ajout du type de prêt:', error);
-          alert('Erreur lors de l\'ajout du type de prêt');
-        });
+          console.error(error);
+          showMessage(error.message, 'error');
+        })
+        .finally(() => setLoading(false));
     });
 
-    window.onload = function () {
-      chargerLoanTypes();
-    };
+    window.addEventListener('DOMContentLoaded', chargerLoanTypes);
   </script>
-
-  <button onclick="window.location.href='index.html'">Retour à l'accueil</button>
-  <br><br><br><br>
 </body>
-<footer>
-  <p>Etablissement financier et prêt bancaire - Gestion des types de prêt</p>
-</footer>
 </html>
