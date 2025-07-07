@@ -15,7 +15,7 @@ CREATE TABLE type_pret (
     duree_max INT NOT NULL CHECK (duree_max > 0),
     montant_min DECIMAL(12,2) NOT NULL CHECK (montant_min >= 0),
     montant_max DECIMAL(12,2) CHECK (montant_max >= 0)
-);/**/
+);
 
 CREATE TABLE client (
     id INT AUTO_INCREMENT PRIMARY KEY,

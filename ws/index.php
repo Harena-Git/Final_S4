@@ -2,40 +2,25 @@
 require 'vendor/autoload.php';
 require 'db.php';
 
-Flight::route('GET /etudiants', function() {
-    $db = getDB();
-    $stmt = $db->query("SELECT * FROM etudiant");
-    Flight::json($stmt->fetchAll(PDO::FETCH_ASSOC));
-});
+// Chargement des modèles
+require 'ws/models/ClientModel.php';
+$clientModel = new ClientModel(getDB());
 
-Flight::route('GET /etudiants/@id', function($id) {
-    $db = getDB();
-    $stmt = $db->prepare("SELECT * FROM etudiant WHERE id = ?");
-    $stmt->execute([$id]);
-    Flight::json($stmt->fetch(PDO::FETCH_ASSOC));
-});
+// Chargement des contrôleurs
+require 'ws/controllers/ClientController.php';
+$clientController = new ClientController($clientModel);
 
-Flight::route('POST /etudiants', function() {
-    $data = Flight::request()->data;
-    $db = getDB();
-    $stmt = $db->prepare("INSERT INTO etudiant (nom, prenom, email, age) VALUES (?, ?, ?, ?)");
-    $stmt->execute([$data->nom, $data->prenom, $data->email, $data->age]);
-    Flight::json(['message' => 'Étudiant ajouté', 'id' => $db->lastInsertId()]);
-});
+// Routes API
+Flight::route('GET /api/clients', [$clientController, 'getAll']);
+Flight::route('GET /api/clients/@id', [$clientController, 'getById']);
+Flight::route('POST /api/clients', [$clientController, 'create']);
+Flight::route('PUT /api/clients/@id', [$clientController, 'update']);
+Flight::route('DELETE /api/clients/@id', [$clientController, 'delete']);
 
-Flight::route('PUT /etudiants/@id', function($id) {
-    $data = Flight::request()->data;
-    $db = getDB();
-    $stmt = $db->prepare("UPDATE etudiant SET nom = ?, prenom = ?, email = ?, age = ? WHERE id = ?");
-    $stmt->execute([$data->nom, $data->prenom, $data->email, $data->age, $id]);
-    Flight::json(['message' => 'Étudiant modifié']);
-});
-
-Flight::route('DELETE /etudiants/@id', function($id) {
-    $db = getDB();
-    $stmt = $db->prepare("DELETE FROM etudiant WHERE id = ?");
-    $stmt->execute([$id]);
-    Flight::json(['message' => 'Étudiant supprimé']);
+// Route pour l'interface web
+Flight::route('GET /clients', function() use ($clientModel) {
+    $clients = $clientModel->getAllClients();
+    Flight::render('clients/list.php', ['clients' => $clients]);
 });
 
 Flight::start();
