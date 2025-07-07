@@ -9,3 +9,26 @@ CREATE TABLE etudiant (
     email VARCHAR(100),
     age INT
 );
+
+CREATE TABLE fonds (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    description VARCHAR(50),
+    valeur DECIMAL(10,2) NOT NULL,
+    date_ajout DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS loan_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    interest_rate DECIMAL(5,2) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS client_loans (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    client_id INT NOT NULL,
+    loan_type_id INT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    status VARCHAR(50) DEFAULT 'active'
+);
