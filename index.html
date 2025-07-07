@@ -1,84 +1,201 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Gestion des fonds</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    input, button { margin: 5px; padding: 5px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-    .fond-section { margin-bottom: 40px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des fonds</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input[type="number"] {
+            padding: 8px;
+            width: 200px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .debug {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
+    <h1>Gestion des fonds</h1>
+    
+    <div class="form-group">
+        <input type="number" id="montant-input" placeholder="Montant" step="0.01" min="0">
+        <button id="ajouter-btn">Ajouter</button>
+    </div>
+    
+    <div id="error-message" class="error"></div>
+    
+    <h2>Liste des fonds</h2>
+    <table id="fonds-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Montant</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Les fonds seront chargés ici dynamiquement -->
+        </tbody>
+    </table>
 
-  <h1>Gestion des fonds</h1>
+    <div class="debug" id="debug-console">
+        Console de débogage...
+    </div>
 
-  <div class="fond-section">
-    <input type="number" id="montant" placeholder="Montant du fond">
-    <button onclick="ajouterFond()">Ajouter</button>
-  </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const debugConsole = document.getElementById('debug-console');
+            
+            function logDebug(message) {
+                debugConsole.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+            }
 
-  <table id="table-fonds">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Montant</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+            // Charger les fonds au démarrage
+            loadFonds();
 
-<script>
-  const apiBase = "http://localhost:8000";
+            // Gérer l'ajout de fond
+            document.getElementById('ajouter-btn').addEventListener('click', function() {
+                const montantInput = document.getElementById('montant-input');
+                const montant = montantInput.value;
+                const errorElement = document.getElementById('error-message');
+                
+                // Validation
+                if (!montant || isNaN(montant) || parseFloat(montant) <= 0) {
+                    errorElement.textContent = 'Veuillez entrer un montant valide (nombre positif)';
+                    return;
+                }
+                
+                errorElement.textContent = '';
+                logDebug(`Tentative d'ajout de fond: ${montant}`);
 
-  function ajax(method, url, data, callback) {
-    const xhr = new XMLHttpRequest();
-    xhr.open(method, apiBase + url, true);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.onreadystatechange = () => {
-      if (xhr.readyState === 4) {
-        if (xhr.status === 200) {
-          callback(JSON.parse(xhr.responseText));
-        } else {
-          alert("Erreur lors de la requête AJAX !");
-        }
-      }
-    };
-    xhr.send(data);
-  }
+                fetch('/fonds', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ montant: parseFloat(montant) })
+                })
+                .then(response => {
+                    logDebug(`Réponse reçue - Status: ${response.status}`);
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            logDebug(`Réponse erreur: ${text}`);
+                            throw new Error(text);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    logDebug(`Données reçues: ${JSON.stringify(data)}`);
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    alert('Fond ajouté avec succès (ID: ' + data.id + ')');
+                    montantInput.value = '';
+                    loadFonds();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    logDebug(`Erreur: ${error.message}`);
+                    errorElement.textContent = 'Erreur lors de l\'ajout: ' + 
+                        (error.message || 'Erreur inconnue');
+                });
+            });
 
-  function chargerFonds() {
-    ajax("GET", "/fonds", null, (data) => {
-      const tbody = document.querySelector("#table-fonds tbody");
-      tbody.innerHTML = "";
-      data.forEach(fond => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${fond.id}</td>
-          <td>${fond.montant}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    });
-  }
-
-  function ajouterFond() {
-    const montant = document.getElementById("montant").value;
-    if (!montant) {
-      alert("Veuillez saisir un montant.");
-      return;
-    }
-    ajax("POST", "/fonds", `montant=${encodeURIComponent(montant)}`, () => {
-      document.getElementById("montant").value = "";
-      chargerFonds();
-    });
-  }
-
-  chargerFonds();
-</script>
-
+            function loadFonds() {
+                logDebug("Début du chargement des fonds...");
+                fetch('/fonds')
+                    .then(response => {
+                        logDebug(`Réponse GET /fonds - Status: ${response.status}`);
+                        const contentType = response.headers.get('content-type');
+                        logDebug(`Content-Type: ${contentType}`);
+                        
+                        if (!response.ok) {
+                            return response.text().then(text => {
+                                logDebug(`Réponse non-OK: ${text}`);
+                                throw new Error(text);
+                            });
+                        }
+                        
+                        if (!contentType || !contentType.includes('application/json')) {
+                            return response.text().then(text => {
+                                logDebug(`Réponse non-JSON: ${text.substring(0, 100)}...`);
+                                throw new Error("Le serveur a renvoyé du HTML au lieu de JSON");
+                            });
+                        }
+                        
+                        return response.json();
+                    })
+                    .then(fonds => {
+                        logDebug(`Fonds reçus: ${JSON.stringify(fonds).substring(0, 100)}...`);
+                        const tableBody = document.querySelector('#fonds-table tbody');
+                        tableBody.innerHTML = '';
+                        
+                        if (!fonds || fonds.length === 0) {
+                            const row = document.createElement('tr');
+                            row.innerHTML = '<td colspan="2">Aucun fond disponible</td>';
+                            tableBody.appendChild(row);
+                        } else {
+                            fonds.forEach(fond => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${fond.id || 'N/A'}</td>
+                                    <td>${fond.montant ? parseFloat(fond.montant).toFixed(2) : '0.00'}</td>
+                                `;
+                                tableBody.appendChild(row);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        logDebug(`Erreur lors du chargement: ${error.message}`);
+                        document.getElementById('error-message').textContent = 
+                            'Erreur lors du chargement des fonds: ' + error.message;
+                    });
+            }
+        });
+    </script>
 </body>
 </html>
