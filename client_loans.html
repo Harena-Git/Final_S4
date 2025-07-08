@@ -105,7 +105,10 @@
       <div class="card" style="margin-top: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h2>Liste des prêts clients</h2>
-          <button class="btn btn-secondary" onclick="window.open('/Final_S4/ws/export_pdf.php', '_blank')">
+          <button
+            class="btn btn-secondary"
+            onclick="window.open('/Final_S4/ws/export_pdf.php', '_blank')"
+          >
             Exporter en PDF
           </button>
         </div>
@@ -117,7 +120,7 @@
   </div>
 
   <footer>
-    <p>© 2023 Etablissement financier - Prêts clients</p>
+    <p>ETU003268 - ETU003330 - ETU003367</p>
   </footer>
 
   <script>
@@ -135,49 +138,6 @@
       btn.disabled = loading;
       text.style.display = loading ? "none" : "inline-block";
       spinner.style.display = loading ? "inline-block" : "none";
-    }
-
-    function chargerOptions() {
-      // Charger les clients
-      fetch("/Final_S4/ws/clients")
-        .then(response => response.json())
-        .then(clients => {
-          const selects = document.querySelectorAll("#client-id, #search-client-id");
-          selects.forEach(select => {
-            clients.forEach(client => {
-              const option = document.createElement("option");
-              option.value = client.id;
-              option.textContent = `${client.nom} ${client.prenom}`;
-              select.appendChild(option);
-            });
-          });
-        });
-
-      // Charger les types de prêt
-      fetch("/Final_S4/ws/loan_types")
-        .then(response => response.json())
-        .then(loanTypes => {
-          const select = document.getElementById("loan-type-id");
-          loanTypes.forEach(type => {
-            const option = document.createElement("option");
-            option.value = type.id;
-            option.textContent = `${type.name} (${type.interest_rate}%)`;
-            select.appendChild(option);
-          });
-        });
-
-      // Charger les fonds
-      fetch("/Final_S4/ws/fonds")
-        .then(response => response.json())
-        .then(fonds => {
-          const select = document.getElementById("fund-id");
-          fonds.forEach(fond => {
-            const option = document.createElement("option");
-            option.value = fond.id;
-            option.textContent = `${fond.description || 'Fond'} (${fond.valeur} Ar)`;
-            select.appendChild(option);
-          });
-        });
     }
 
     function chargerClientLoans() {
@@ -335,5 +295,7 @@
       chargerClientLoans();
     });
   </script>
+
 </body>
+
 </html>
