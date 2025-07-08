@@ -86,7 +86,7 @@
       const container = document.getElementById('loan-types-list');
       container.innerHTML = '<p>Chargement en cours...</p>';
       
-      fetch('/Final_S4/ws/loan_types')
+      fetch('/ws/loan_types')
         .then(response => {
           if (!response.ok) throw new Error('Erreur réseau');
           return response.json();
