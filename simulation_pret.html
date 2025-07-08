@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simulation de prêts</title>
+  <link rel="stylesheet" href="theme.css" />
+</head>
+<body>
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Accueil</a></li>
+        <li><a href="client_loans.html">Gestion des prêts clients</a></li>
+        <li><a href="simulation_pret.html">Simulation de prêts</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h1>Simulation de prêts</h1>
+
+    <div id="message-container"></div>
+
+    <section class="card">
+      <h2>Nouvelle simulation</h2>
+      <form id="simulation-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="sim-client-id">ID Client</label>
+            <input type="number" id="sim-client-id" required />
+          </div>
+          <div class="form-group">
+            <label for="sim-loan-type-id">Type de prêt (ID)</label>
+            <input type="number" id="sim-loan-type-id" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="sim-amount">Montant (€)</label>
+            <input type="number" id="sim-amount" step="0.01" min="0" required />
+          </div>
+          <div class="form-group">
+            <label for="sim-duration">Durée (en mois)</label>
+            <input type="number" id="sim-duration" min="1" required />
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button type="submit" class="btn btn-primary" id="sim-submit-btn">
+            <span id="sim-submit-text">Simuler</span>
+            <span id="sim-submit-loading" class="loading" style="display: none;"></span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card" style="margin-top: 2rem;">
+      <h2>Liste des simulations</h2>
+      <div id="simulations-list" class="table-responsive">
+        <p>Chargement en cours...</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 Etablissement financier - Simulation de prêts</p>
+  </footer>
+
+  <script>
+    function showMessage(message, type = "success") {
+      const container = document.getElementById("message-container");
+      container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      setTimeout(() => (container.innerHTML = ""), 5000);
+    }
+
+    function setSimLoading(loading) {
+      const btn = document.getElementById("sim-submit-btn");
+      const text = document.getElementById("sim-submit-text");
+      const spinner = document.getElementById("sim-submit-loading");
+
+      btn.disabled = loading;
+      text.style.display = loading ? "none" : "inline-block";
+      spinner.style.display = loading ? "inline-block" : "none";
+    }
+
+    // Charger toutes les simulations
+    function chargerSimulations() {
+      const container = document.getElementById("simulations-list");
+      container.innerHTML = "<p>Chargement en cours...</p>";
+
+      fetch("/Final_S4/ws/loan_simulations")
+        .then((response) => {
+          if (!response.ok) throw new Error("Erreur réseau");
+          return response.json();
+        })
+        .then((data) => {
+          if (data.length === 0) {
+            container.innerHTML = "<p>Aucune simulation enregistrée</p>";
+            return;
+          }
+
+          let html = `
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Client</th>
+                  <th>Type de prêt</th>
+                  <th>Montant (€)</th>
+                  <th>Durée (mois)</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          data.forEach((sim) => {
+            html += `
+              <tr>
+                <td>${sim.id}</td>
+                <td>${sim.client_id}</td>
+                <td>${sim.loan_type_id}</td>
+                <td>${sim.amount.toFixed(2)}</td>
+                <td>${sim.duration_months}</td>
+                <td>${sim.validation_status}</td>
+                <td>
+                  ${
+                    sim.validation_status === "pending"
+                      ? `<button onclick="validerSimulation(${sim.id})" class="btn btn-success btn-sm">Valider</button>`
+                      : "-"
+                  }
+                </td>
+              </tr>
+            `;
+          });
+
+          html += `</tbody></table>`;
+          container.innerHTML = html;
+        })
+        .catch((error) => {
+          console.error(error);
+          container.innerHTML = `<p class="alert-error">${error.message}</p>`;
+        });
+    }
+
+    // Envoyer une nouvelle simulation
+    document.getElementById("simulation-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      setSimLoading(true);
+
+      const formData = {
+        client_id: Number(document.getElementById("sim-client-id").value),
+        loan_type_id: Number(document.getElementById("sim-loan-type-id").value),
+        amount: parseFloat(document.getElementById("sim-amount").value),
+        duration_months: parseInt(document.getElementById("sim-duration").value, 10)
+      };
+
+      fetch("/Final_S4/ws/loan_simulations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error("Erreur lors de la création de la simulation");
+          return response.json();
+        })
+        .then((data) => {
+          showMessage(data.message || "Simulation enregistrée");
+          document.getElementById("simulation-form").reset();
+          chargerSimulations();
+        })
+        .catch((error) => {
+          console.error(error);
+          showMessage(error.message, "error");
+        })
+        .finally(() => setSimLoading(false));
+    });
+
+    // Valider une simulation
+    function validerSimulation(id) {
+      fetch(`/Final_S4/ws/loan_simulations/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ validation_status: "approved" })
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Erreur lors de la validation");
+          return res.json();
+        })
+        .then((data) => {
+          showMessage(data.message || "Simulation validée");
+          chargerSimulations();
+        })
+        .catch((e) => showMessage(e.message, "error"));
+    }
+
+    window.addEventListener("DOMContentLoaded", chargerSimulations);
+  </script>
+</body>
+</html>

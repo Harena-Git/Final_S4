@@ -36,6 +36,17 @@ CREATE TABLE IF NOT EXISTS client_loans (
     FOREIGN KEY (fund_id) REFERENCES fonds(id)
 );
 
+CREATE TABLE IF NOT EXISTS loan_simulations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    client_id INT NOT NULL,
+    loan_type_id INT NOT NULL,
+    amount DECIMAL(15, 2) NOT NULL,
+    duration_months INT NOT NULL,
+    validation_status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES clients(id),
+    FOREIGN KEY (loan_type_id) REFERENCES loan_types(id)
+);
 -- Donnees
 -- Client
 INSERT INTO client (nom, prenom, email, age) VALUES
@@ -60,3 +71,6 @@ INSERT INTO client_loans (client_id, loan_type_id, fund_id, amount, start_date, 
 (1, 1, 1, 2000.00, '2024-07-01', '2025-07-01', 'active'),
 (2, 2, 2, 3000.00, '2024-06-15', '2029-06-15', 'active'),
 (3, 3, 3, 1500.00, '2024-07-05', NULL, 'active');
+
+
+
