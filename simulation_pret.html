@@ -1,17 +1,23 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Simulation de prêts</title>
   <link rel="stylesheet" href="theme.css" />
 </head>
+
 <body>
   <header>
     <nav>
       <ul>
         <li><a href="index.html">Accueil</a></li>
+        <li><a href="fonds.html">Gestion des fonds</a></li>
+        <li><a href="loan_types.html">Gestion des types de prêt</a></li>
         <li><a href="client_loans.html">Gestion des prêts clients</a></li>
+        <li><a href="monthly_interests.html">Intérêts mensuels</a></li>
+        <li><a href="amortissement.html">Simulation d'amortissement</a></li>
         <li><a href="simulation_pret.html">Simulation de prêts</a></li>
       </ul>
     </nav>
@@ -27,18 +33,22 @@
       <form id="simulation-form">
         <div class="form-row">
           <div class="form-group">
-            <label for="sim-client-id">ID Client</label>
-            <input type="number" id="sim-client-id" required />
+            <label for="sim-client-id">Client</label>
+            <select id="sim-client-id" required>
+              <option value="">Sélectionnez un client</option>
+            </select>
           </div>
           <div class="form-group">
-            <label for="sim-loan-type-id">Type de prêt (ID)</label>
-            <input type="number" id="sim-loan-type-id" required />
+            <label for="sim-loan-type-id">Type de prêt</label>
+            <select id="sim-loan-type-id" required>
+              <option value="">Sélectionnez un type de prêt</option>
+            </select>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="sim-amount">Montant (€)</label>
+            <label for="sim-amount">Montant (Ar)</label>
             <input type="number" id="sim-amount" step="0.01" min="0" required />
           </div>
           <div class="form-group">
@@ -85,6 +95,37 @@
       spinner.style.display = loading ? "inline-block" : "none";
     }
 
+    // Charger les clients et types de prêt pour les listes déroulantes
+    function chargerOptions() {
+      // Charger les clients, mbola mila manambotra client model sy controllers
+      fetch("/Final_S4/ws/clients")
+        .then(response => response.json())
+        .then(clients => {
+          const select = document.getElementById("sim-client-id");
+          clients.forEach(client => {
+            const option = document.createElement("option");
+            option.value = client.id;
+            option.textContent = `${client.nom} ${client.prenom}`;
+            select.appendChild(option);
+          });
+        })
+        .catch(error => console.error("Erreur chargement clients:", error));
+
+      // Charger les types de prêt
+      fetch("/Final_S4/ws/loan_types")
+        .then(response => response.json())
+        .then(loanTypes => {
+          const select = document.getElementById("sim-loan-type-id");
+          loanTypes.forEach(type => {
+            const option = document.createElement("option");
+            option.value = type.id;
+            option.textContent = `${type.name} (${type.interest_rate}%)`;
+            select.appendChild(option);
+          });
+        })
+        .catch(error => console.error("Erreur chargement types de prêt:", error));
+    }
+
     // Charger toutes les simulations
     function chargerSimulations() {
       const container = document.getElementById("simulations-list");
@@ -108,7 +149,7 @@
                   <th>ID</th>
                   <th>Client</th>
                   <th>Type de prêt</th>
-                  <th>Montant (€)</th>
+                  <th>Montant (Ar)</th>
                   <th>Durée (mois)</th>
                   <th>Statut</th>
                   <th>Actions</th>
@@ -127,11 +168,10 @@
                 <td>${sim.duration_months}</td>
                 <td>${sim.validation_status}</td>
                 <td>
-                  ${
-                    sim.validation_status === "pending"
-                      ? `<button onclick="validerSimulation(${sim.id})" class="btn btn-success btn-sm">Valider</button>`
-                      : "-"
-                  }
+                  ${sim.validation_status === "pending"
+                ? `<button onclick="validerSimulation(${sim.id})" class="btn btn-success btn-sm">Valider</button>`
+                : "-"
+              }
                 </td>
               </tr>
             `;
@@ -197,7 +237,11 @@
         .catch((e) => showMessage(e.message, "error"));
     }
 
-    window.addEventListener("DOMContentLoaded", chargerSimulations);
+    window.addEventListener("DOMContentLoaded", function() {
+      chargerOptions();
+      chargerSimulations();
+    });
   </script>
 </body>
+
 </html>

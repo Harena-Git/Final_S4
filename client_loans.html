@@ -14,7 +14,9 @@
         <li><a href="fonds.html">Gestion des fonds</a></li>
         <li><a href="loan_types.html">Gestion des types de prêt</a></li>
         <li><a href="client_loans.html">Gestion des prêts clients</a></li>
-        <li><a href="interest_earned.html">Intérêts gagnés</a></li>
+        <li><a href="monthly_interests.html">Intérêts mensuels</a></li>
+        <li><a href="amortissement.html">Simulation d'amortissement</a></li>
+        <li><a href="simulation_pret.html">Simulation de prêts</a></li>
       </ul>
     </nav>
   </header>
@@ -30,23 +32,29 @@
         <form id="client-loan-form">
           <div class="form-row">
             <div class="form-group">
-              <label for="client-id">ID Client</label>
-              <input type="number" id="client-id" required />
+              <label for="client-id">Client</label>
+              <select id="client-id" required>
+                <option value="">Sélectionnez un client</option>
+              </select>
             </div>
             <div class="form-group">
-              <label for="loan-type-id">Type de prêt (ID)</label>
-              <input type="number" id="loan-type-id" required />
+              <label for="loan-type-id">Type de prêt</label>
+              <select id="loan-type-id" required>
+                <option value="">Sélectionnez un type de prêt</option>
+              </select>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label for="fund-id">Fond (ID)</label>
-              <input type="number" id="fund-id" required />
+              <label for="fund-id">Fond</label>
+              <select id="fund-id" required>
+                <option value="">Sélectionnez un fond</option>
+              </select>
             </div>
             <div class="form-group">
-              <label for="amount">Montant (€)</label>
-              <input type="number" id="amount" step="0.01" min="0" required />
+              <label for="amount">Montant (Ar)</label>
+              <input type="number" id="amount" step="1" min="0" required />
             </div>
           </div>
 
@@ -79,43 +87,25 @@
         </form>
       </div>
 
-      <!-- NOUVEAU : Recherche par ID Client -->
       <div class="card" style="margin-top: 2rem;">
-        <h2>Rechercher les prêts d’un client</h2>
+        <h2>Rechercher les prêts d'un client</h2>
         <div class="form-row" style="gap: 1rem; align-items: center;">
-          <input
-            type="number"
-            id="search-client-id"
-            placeholder="Entrez l'ID client"
-            required
-            style="flex-grow: 1; padding: 0.5rem;"
-          />
+          <select id="search-client-id" required style="flex-grow: 1; padding: 0.5rem;">
+            <option value="">Sélectionnez un client</option>
+          </select>
           <button onclick="rechercherPretsClient()" class="btn btn-primary">
             Rechercher
           </button>
         </div>
-        <div
-          id="resultat-prets-client"
-          class="table-responsive"
-          style="margin-top: 1rem;"
-        >
+        <div id="resultat-prets-client" class="table-responsive" style="margin-top: 1rem;">
           <!-- Résultats de la recherche ici -->
         </div>
       </div>
 
       <div class="card" style="margin-top: 2rem;">
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          "
-        >
+        <div style="display: flex; justify-content: space-between; align-items: center;">
           <h2>Liste des prêts clients</h2>
-          <button
-            class="btn btn-secondary"
-            onclick="window.open('/Final_S4/ws/export_pdf.php', '_blank')"
-          >
+          <button class="btn btn-secondary" onclick="window.open('/Final_S4/ws/export_pdf.php', '_blank')">
             Exporter en PDF
           </button>
         </div>
@@ -147,6 +137,63 @@
       spinner.style.display = loading ? "inline-block" : "none";
     }
 
+    function chargerOptions() {
+      // Charger les clients
+      fetch("/Final_S4/ws/clients")
+      .then(response => response.json())
+        .then(clients => {
+            const selects = document.querySelectorAll("#client-id, #search-client-id");
+            selects.forEach(select => {
+                // Vider le select sauf la première option
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                
+                clients.forEach(client => {
+                    const option = document.createElement("option");
+                    option.value = client.id;
+                    option.textContent = `${client.nom} ${client.prenom}`;
+                    select.appendChild(option);
+                });
+            });
+        })
+        .catch(error => console.error("Erreur de chargement des clients:", error));
+}
+
+// Mettre à jour l'écouteur DOMContentLoaded
+window.addEventListener("DOMContentLoaded", function() {
+    chargerClients();  // Charger d'abord les clients
+    chargerOptions();  // Puis les autres options
+    chargerClientLoans();
+});
+
+      // Charger les types de prêt
+      fetch("/Final_S4/ws/loan_types")
+        .then(response => response.json())
+        .then(loanTypes => {
+          const select = document.getElementById("loan-type-id");
+          loanTypes.forEach(type => {
+            const option = document.createElement("option");
+            option.value = type.id;
+            option.textContent = `${type.name} (${type.interest_rate}%)`;
+            select.appendChild(option);
+          });
+        });
+
+      // Charger les fonds
+      fetch("/Final_S4/ws/fonds")
+        .then(response => response.json())
+        .then(fonds => {
+          const select = document.getElementById("fund-id");
+          fonds.forEach(fond => {
+            const option = document.createElement("option");
+            option.value = fond.id;
+            option.textContent = `${fond.description || 'Fond'} (${fond.valeur} Ar)`;
+            select.appendChild(option);
+          });
+        });
+    }
+
     function chargerClientLoans() {
       const container = document.getElementById("client-loans-list");
       container.innerHTML = "<p>Chargement en cours...</p>";
@@ -169,7 +216,7 @@
                   <th>Client</th>
                   <th>Type</th>
                   <th>Fond</th>
-                  <th>Montant</th>
+                  <th>Montant (Ar)</th>
                   <th>Début</th>
                   <th>Fin</th>
                   <th>Statut</th>
@@ -184,7 +231,7 @@
                 <td>${loan.client_id}</td>
                 <td>${loan.loan_type_id}</td>
                 <td>${loan.fund_id}</td>
-                <td>${loan.amount} €</td>
+                <td>${loan.amount} Ar</td>
                 <td>${new Date(loan.start_date).toLocaleDateString()}</td>
                 <td>${loan.end_date ? new Date(loan.end_date).toLocaleDateString() : "-"}</td>
                 <td>${loan.status === "active" ? "Actif" : "Clôturé"}</td>
@@ -201,53 +248,47 @@
         });
     }
 
-    document
-      .getElementById("client-loan-form")
-      .addEventListener("submit", function (e) {
-        e.preventDefault();
-        setLoading(true);
+    document.getElementById("client-loan-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      setLoading(true);
 
-        const formData = {
-          client_id: document.getElementById("client-id").value,
-          loan_type_id: document.getElementById("loan-type-id").value,
-          fund_id: document.getElementById("fund-id").value,
-          amount: document.getElementById("amount").value,
-          start_date: document.getElementById("start-date").value,
-          end_date: document.getElementById("end-date").value || null,
-          status: document.getElementById("status").value,
-        };
+      const formData = {
+        client_id: document.getElementById("client-id").value,
+        loan_type_id: document.getElementById("loan-type-id").value,
+        fund_id: document.getElementById("fund-id").value,
+        amount: document.getElementById("amount").value,
+        start_date: document.getElementById("start-date").value,
+        end_date: document.getElementById("end-date").value || null,
+        status: document.getElementById("status").value,
+      };
 
-        fetch("/ws/client_loans", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+      fetch("/ws/client_loans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error("Erreur lors de l'enregistrement");
+          return response.json();
         })
-          .then((response) => {
-            if (!response.ok) throw new Error("Erreur lors de l'enregistrement");
-            return response.json();
-          })
-          .then((data) => {
-            showMessage(data.message || "Prêt client enregistré");
-            document.getElementById("client-loan-form").reset();
-            chargerClientLoans();
-          })
-          .catch((error) => {
-            console.error(error);
-            showMessage(error.message, "error");
-          })
-          .finally(() => setLoading(false));
-      });
+        .then((data) => {
+          showMessage(data.message || "Prêt client enregistré");
+          document.getElementById("client-loan-form").reset();
+          chargerClientLoans();
+        })
+        .catch((error) => {
+          console.error(error);
+          showMessage(error.message, "error");
+        })
+        .finally(() => setLoading(false));
+    });
 
-    window.addEventListener("DOMContentLoaded", chargerClientLoans);
-
-    // --- NOUVEAU : Recherche des prêts d'un client ---
     function rechercherPretsClient() {
       const clientId = document.getElementById("search-client-id").value.trim();
       const container = document.getElementById("resultat-prets-client");
 
       if (!clientId) {
-        container.innerHTML =
-          '<p style="color:red;">Veuillez entrer un ID client valide.</p>';
+        container.innerHTML = '<p style="color:red;">Veuillez sélectionner un client</p>';
         return;
       }
 
@@ -257,9 +298,7 @@
         .then((res) => res.json())
         .then((data) => {
           if (!Array.isArray(data)) {
-            container.innerHTML = `<p style="color:red;">Erreur : ${
-              data.error || "Données invalides"
-            }</p>`;
+            container.innerHTML = `<p style="color:red;">Erreur : ${data.error || "Données invalides"}</p>`;
             return;
           }
 
@@ -274,7 +313,7 @@
                 <tr>
                   <th>ID</th>
                   <th>Type</th>
-                  <th>Montant (€)</th>
+                  <th>Montant (Ar)</th>
                   <th>Début</th>
                   <th>Fin</th>
                   <th>Statut</th>
@@ -288,7 +327,7 @@
               <tr>
                 <td>${loan.id}</td>
                 <td>${loan.loan_type_id}</td>
-                <td>${loan.amount}</td>
+                <td>${loan.amount} Ar</td>
                 <td>${loan.start_date}</td>
                 <td>${loan.end_date || "-"}</td>
                 <td>${loan.status}</td>
@@ -304,6 +343,11 @@
           container.innerHTML = `<p style="color:red;">Erreur de chargement : ${error.message}</p>`;
         });
     }
+
+    window.addEventListener("DOMContentLoaded", function() {
+      chargerOptions();
+      chargerClientLoans();
+    });
   </script>
 </body>
 </html>
