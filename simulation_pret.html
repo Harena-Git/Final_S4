@@ -33,22 +33,18 @@
       <form id="simulation-form">
         <div class="form-row">
           <div class="form-group">
-            <label for="sim-client-id">Client</label>
-            <select id="sim-client-id" required>
-              <option value="">Sélectionnez un client</option>
-            </select>
+            <label for="sim-client-id">ID Client</label>
+            <input type="number" id="sim-client-id" required />
           </div>
           <div class="form-group">
-            <label for="sim-loan-type-id">Type de prêt</label>
-            <select id="sim-loan-type-id" required>
-              <option value="">Sélectionnez un type de prêt</option>
-            </select>
+            <label for="sim-loan-type-id">Type de prêt (ID)</label>
+            <input type="number" id="sim-loan-type-id" required />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="sim-amount">Montant (Ar)</label>
+            <label for="sim-amount">Montant (€)</label>
             <input type="number" id="sim-amount" step="0.01" min="0" required />
           </div>
           <div class="form-group">
@@ -95,37 +91,6 @@
       spinner.style.display = loading ? "inline-block" : "none";
     }
 
-    // Charger les clients et types de prêt pour les listes déroulantes
-    function chargerOptions() {
-      // Charger les clients, mbola mila manambotra client model sy controllers
-      fetch("/Final_S4/ws/clients")
-        .then(response => response.json())
-        .then(clients => {
-          const select = document.getElementById("sim-client-id");
-          clients.forEach(client => {
-            const option = document.createElement("option");
-            option.value = client.id;
-            option.textContent = `${client.nom} ${client.prenom}`;
-            select.appendChild(option);
-          });
-        })
-        .catch(error => console.error("Erreur chargement clients:", error));
-
-      // Charger les types de prêt
-      fetch("/Final_S4/ws/loan_types")
-        .then(response => response.json())
-        .then(loanTypes => {
-          const select = document.getElementById("sim-loan-type-id");
-          loanTypes.forEach(type => {
-            const option = document.createElement("option");
-            option.value = type.id;
-            option.textContent = `${type.name} (${type.interest_rate}%)`;
-            select.appendChild(option);
-          });
-        })
-        .catch(error => console.error("Erreur chargement types de prêt:", error));
-    }
-
     // Charger toutes les simulations
     function chargerSimulations() {
       const container = document.getElementById("simulations-list");
@@ -149,7 +114,7 @@
                   <th>ID</th>
                   <th>Client</th>
                   <th>Type de prêt</th>
-                  <th>Montant (Ar)</th>
+                  <th>Montant (€)</th>
                   <th>Durée (mois)</th>
                   <th>Statut</th>
                   <th>Actions</th>
@@ -237,10 +202,7 @@
         .catch((e) => showMessage(e.message, "error"));
     }
 
-    window.addEventListener("DOMContentLoaded", function() {
-      chargerOptions();
-      chargerSimulations();
-    });
+    window.addEventListener("DOMContentLoaded", chargerSimulations);
   </script>
 </body>
 
