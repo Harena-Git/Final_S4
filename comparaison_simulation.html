@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Comparaison de Simulations</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      margin: 10px 0;
+      font-size: 0.9em;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-compare {
+      background-color: #e67e22;
+      color: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    thead {
+      background-color: #2980b9;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #eaf2ff;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 10;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+      background-color: #fff;
+      margin: 5% auto;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 800px;
+      position: relative;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: crimson;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .highlight {
+      background-color: #fdecea;
+      color: #c0392b;
+      font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📋 Liste des Simulations</h1>
+  <button class="btn btn-compare" onclick="comparerSimulations()">📊 Comparer les Sélections</button>
+
+  <table id="tableSimulations">
+    <thead>
+      <tr>
+        <th>Sélection</th>
+        <th>ID</th>
+        <th>Client</th>
+        <th>Type de prêt</th>
+        <th>Montant</th>
+        <th>Durée (mois)</th>
+        <th>Statut</th>
+        <th>Taux (%)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- MODAL COMPARAISON -->
+  <div id="modalCompare" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="fermerComparaison()">✖ Fermer</button>
+      <div id="compareContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // Rendu du tableau principal
+    fetch('http://localhost/Final_S4/ws/loan_simulations')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const tbody = document.querySelector('#tableSimulations tbody');
+          data.data.forEach(sim => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td><input type="checkbox" class="sim-check" value="${sim.id}"></td>
+              <td>${sim.id}</td>
+              <td>${sim.client_name}</td>
+              <td>${sim.loan_type_name}</td>
+              <td>${Number(sim.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</td>
+              <td>${sim.duration_months}</td>
+              <td>${sim.validation_status}</td>
+              <td>${sim.interest_rate}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      });
+
+    function comparerSimulations() {
+      const checked = Array.from(document.querySelectorAll('.sim-check:checked'));
+      if (checked.length !== 2) {
+        alert("Sélectionnez exactement 2 simulations.");
+        return;
+      }
+
+      const ids = checked.map(cb => cb.value);
+      Promise.all([
+        fetch(`http://localhost/Final_S4/ws/loan_simulations/${ids[0]}`).then(res => res.json()),
+        fetch(`http://localhost/Final_S4/ws/loan_simulations/${ids[1]}`).then(res => res.json())
+      ])
+      .then(([s1, s2]) => {
+        if (!s1.success || !s2.success) {
+          alert("Erreur lors de la récupération.");
+          return;
+        }
+        afficherComparaison(s1.data, s2.data);
+      });
+    }
+
+    function afficherComparaison(sim1, sim2) {
+      const champs = [
+        { label: "Client", champ: "client_name" },
+        { label: "Type de prêt", champ: "loan_type_name" },
+        { label: "Montant", champ: "amount" },
+        { label: "Durée", champ: "duration_months" },
+        { label: "Taux (%)", champ: "interest_rate" },
+        { label: "Statut", champ: "validation_status" }
+      ];
+
+      let rows = "";
+      champs.forEach(c => {
+        const val1 = sim1[c.champ];
+        const val2 = sim2[c.champ];
+        const diff = val1 != val2;
+        rows += `
+          <tr>
+            <td>${c.label}</td>
+            <td class="${diff ? 'highlight' : ''}">${val1}</td>
+            <td class="${diff ? 'highlight' : ''}">${val2}</td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('compareContent').innerHTML = `
+        <h2>📊 Comparaison des Simulations #${sim1.id} et #${sim2.id}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Champ</th>
+              <th>Simulation #${sim1.id}</th>
+              <th>Simulation #${sim2.id}</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+
+      document.getElementById('modalCompare').style.display = 'block';
+    }
+
+    function fermerComparaison() {
+      document.getElementById('modalCompare').style.display = 'none';
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Liste des Simulations</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    #tableSimulations {
+      width: 100%;
+      border-collapse: collapse;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+      background-color: white;
+    }
+
+    #tableSimulations thead {
+      background: #4a90e2;
+      color: white;
+    }
+
+    #tableSimulations th, #tableSimulations td {
+      padding: 12px 15px;
+      text-align: left;
+    }
+
+    #tableSimulations tbody tr:nth-child(even) {
+      background-color: #f3f6fb;
+    }
+
+    #tableSimulations tbody tr:hover {
+      background-color: #dbe9ff;
+      cursor: pointer;
+    }
+
+    #tableSimulations th {
+      font-weight: 600;
+      font-size: 1em;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      font-size: 0.9em;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-save {
+      background-color: #27ae60;
+      color: white;
+    }
+
+    .btn-export {
+      margin: 15px 0;
+      background-color: #34495e;
+      color: white;
+    }
+
+    @media (max-width: 700px) {
+      #tableSimulations {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Liste des Simulations</h1>
+
+  <button class="btn btn-export" onclick="exportCSV()">📥 Exporter en CSV</button>
+
+  <table id="tableSimulations" border="0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Client</th>
+        <th>Type de prêt</th>
+        <th>Montant</th>
+        <th>Durée (mois)</th>
+        <th>Statut</th>
+        <th>Taux (%)</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const fundId = 1; // Fonds à utiliser
+
+    function chargerSimulations() {
+      fetch('http://localhost/Final_S4/ws/loan_simulations')
+        .then(res => {
+          if (!res.ok) throw new Error('Erreur réseau');
+          return res.json();
+        })
+        .then(data => {
+          if (data.success) {
+            const tbody = document.querySelector('#tableSimulations tbody');
+            tbody.innerHTML = '';
+
+            data.data.forEach(sim => {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>${sim.id}</td>
+                <td>${sim.client_name}</td>
+                <td>${sim.loan_type_name}</td>
+                <td>${Number(sim.amount).toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}</td>
+                <td>${sim.duration_months}</td>
+                <td style="text-transform: capitalize;">${sim.validation_status}</td>
+                <td>${sim.interest_rate}</td>
+                <td>
+                  ${sim.validation_status === 'approved' 
+                    ? `<button class="btn btn-save" onclick="sauvegarderPret(${sim.id})">💾 Sauvegarder</button>` 
+                    : ''}
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          } else {
+            alert("Erreur API : " + (data.error || "Chargement impossible"));
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Erreur serveur ou réseau");
+        });
+    }
+
+    function sauvegarderPret(simulationId) {
+      fetch(`http://localhost/Final_S4/ws/loan_simulations/${simulationId}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fund_id: fundId })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          alert("✅ Simulation enregistrée comme prêt !");
+          chargerSimulations(); // recharger la liste
+        } else {
+          alert("❌ Échec : " + (result.error || "Erreur inconnue"));
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Erreur lors de la sauvegarde");
+      });
+    }
+
+    function exportCSV() {
+      fetch('http://localhost/Final_S4/ws/loan_simulations')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            let csv = "ID,Client,Type de prêt,Montant,Durée,Statut,Taux\n";
+            data.data.forEach(sim => {
+              csv += `${sim.id},"${sim.client_name}","${sim.loan_type_name}",${sim.amount},${sim.duration_months},${sim.validation_status},${sim.interest_rate}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "simulations.csv";
+            link.click();
+          } else {
+            alert("Erreur lors de l'export CSV");
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Erreur réseau lors de l'export CSV");
+        });
+    }
+
+    // Initialisation
+    chargerSimulations();
+  </script>
+
+</body>
+</html>

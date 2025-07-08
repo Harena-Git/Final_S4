@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Intérêts mensuels - EF</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Intérêts mensuels</title>
     <link rel="stylesheet" href="theme.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -19,38 +20,84 @@
                 <li><a href="monthly_interests.html">Intérêts mensuels</a></li>
                 <li><a href="amortissement.html">Simulation d'amortissement</a></li>
                 <li><a href="simulation_pret.html">Simulation de prêts</a></li>
-              </ul>
+            </ul>
         </nav>
     </header>
 
-    <h1>Intérêts mensuels gagnés</h1>
+    <main class="container">
+        <h1>Intérêts mensuels</h1>
 
-    <div class="filters">
-        <label for="start-month">Période de début:</label>
-        <input type="month" id="start-month" name="start-month">
+        <div id="message-container"></div>
 
-        <label for="end-month">Période de fin:</label>
-        <input type="month" id="end-month" name="end-month">
+        <section class="card">
+            <h2>Filtrer les intérêts</h2>
+            <form id="filter-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start-month">Période de début</label>
+                        <input type="month" id="start-month" name="start-month" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end-month">Période de fin</label>
+                        <input type="month" id="end-month" name="end-month" required>
+                    </div>
+                </div>
 
-        <button id="apply-filters">Appliquer</button>
-    </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary" id="submit-btn">
+                        <span id="submit-text">Rechercher</span>
+                        <span id="submit-loading" class="loading" style="display: none;"></span>
+                    </button>
+                    <button type="reset" class="btn btn-secondary">Réinitialiser</button>
+                </div>
+            </form>
+        </section>
 
-    <div class="results">
-        <h2>Tableau des intérêts</h2>
-        <div id="interest-table"></div>
+        <section class="card" style="margin-top: 2rem;">
+            <h2>Résultats</h2>
+            <div class="results">
+                <h3>Tableau des intérêts</h3>
+                <div id="interest-table" class="table-responsive"></div>
 
-        <h2>Graphique des intérêts</h2>
-        <canvas id="interest-chart" width="800" height="400"></canvas>
-    </div>
+                <h3 style="margin-top: 2rem;">Visualisation graphique</h3>
+                <div class="chart-container" style="position: relative; height:400px; width:100%">
+                    <canvas id="interest-chart"></canvas>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2023 Etablissement financier - Intérêts mensuels</p>
+    </footer>
 
     <script>
         let interestChart;
+        
+        function showMessage(message, type = "success") {
+            const container = document.getElementById("message-container");
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => (container.innerHTML = ""), 5000);
+        }
+
+        function setLoading(loading) {
+            const btn = document.getElementById("submit-btn");
+            const text = document.getElementById("submit-text");
+            const spinner = document.getElementById("submit-loading");
+
+            btn.disabled = loading;
+            text.style.display = loading ? "none" : "inline-block";
+            spinner.style.display = loading ? "inline-block" : "none";
+        }
 
         function loadInterests(start = null, end = null) {
-            let url = '/ws/monthly_interests';
+            let url = '/Final_S4/ws/monthly_interests';
             if (start || end) {
                 url += `?start=${start || ''}&end=${end || ''}`;
             }
+
+            setLoading(true);
+            document.getElementById("interest-table").innerHTML = "<p>Chargement des données...</p>";
 
             fetch(url)
                 .then(response => {
@@ -58,7 +105,6 @@
                     return response.json();
                 })
                 .then(data => {
-                    // Vérification de la structure des données
                     if (!data || !data.table_data) {
                         throw new Error('Format de données invalide');
                     }
@@ -68,16 +114,17 @@
                 })
                 .catch(error => {
                     console.error('Erreur:', error);
-                    document.getElementById('interest-table').innerHTML =
-                        '<p class="error">Erreur lors du chargement des données</p>';
-                });
+                    document.getElementById("interest-table").innerHTML =
+                        `<p class="alert-error">Erreur lors du chargement: ${error.message}</p>`;
+                })
+                .finally(() => setLoading(false));
         }
 
         function renderTable(data) {
-            const tableDiv = document.getElementById('interest-table');
+            const tableDiv = document.getElementById("interest-table");
 
             if (!data || !Array.isArray(data)) {
-                tableDiv.innerHTML = '<p class="error">Données invalides</p>';
+                tableDiv.innerHTML = '<p class="alert-error">Données invalides</p>';
                 return;
             }
 
@@ -86,70 +133,33 @@
                 return;
             }
 
-            let html = '<table><thead><tr>';
-            html += '<th>Mois/Année</th>';
-            html += '<th>Intérêts mensuels (€)</th>';
-            html += '<th>Nombre de prêts</th>';
-            html += '<th>Montant total (€)</th>';
-            html += '</tr></thead><tbody>';
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mois/Année</th>
+                            <th>Intérêts (Ar)</th>
+                            <th>Nombre de prêts</th>
+                            <th>Montant total (Ar)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
 
             data.forEach(row => {
-                html += `<tr>
-            <td>${row.period}</td>
-            <td>${parseFloat(row.monthly_interest).toFixed(2)}</td>
-            <td>${row.loan_count}</td>
-            <td>${parseFloat(row.total_amount).toFixed(2)}</td>
-        </tr>`;
+                html += `
+                    <tr>
+                        <td>${row.period}</td>
+                        <td>${parseFloat(row.monthly_interest).toFixed(0)}</td>
+                        <td>${row.loan_count}</td>
+                        <td>${parseFloat(row.total_amount).toFixed(0)}</td>
+                    </tr>
+                `;
             });
 
-            html += '</tbody></table>';
+            html += `</tbody></table>`;
             tableDiv.innerHTML = html;
         }
-        // function loadInterests(start = null, end = null) {
-        //     let url = '/ws/monthly_interests';
-        //     if (start || end) {
-        //         url += `?start=${start || ''}&end=${end || ''}`;
-        //     }
-
-        //     fetch(url)
-        //         .then(response => response.json())
-        //         .then(data => {
-        //             // Afficher le tableau
-        //             renderTable(data.table_data);
-
-        //             // Afficher le graphique
-        //             renderChart(data.chart_data);
-        //         })
-        //         .catch(error => console.error('Error:', error));
-        // }
-
-        // function renderTable(data) {
-        //     const tableDiv = document.getElementById('interest-table');
-
-        //     if (data.length === 0) {
-        //         tableDiv.innerHTML = '<p>Aucune donnée disponible</p>';
-        //         return;
-        //     }
-
-        //     let html = '<table><thead><tr>';
-        //     html += '<th>Mois/Année</th>';
-        //     html += '<th>Intérêts mensuels (€)</th>';
-        //     html += '<th>Nombre de prêts</th>';
-        //     html += '<th>Montant total (€)</th>';
-        //     html += '</tr></thead><tbody>';
-
-        //     data.forEach(row => {
-        //         html += `<tr>
-        //             <td>${row.year_month}</td>
-        //             <td>${parseFloat(row.monthly_interest).toFixed(2)}</td>
-        //             <td>${row.loan_count}</td>
-        //             <td>${parseFloat(row.total_amount).toFixed(2)}</td>
-        //         </tr>`;
-        //     });
-
-        //     html += '</tbody></table>';
-        //     tableDiv.innerHTML = html;
-        // }
 
         function renderChart(chartData) {
             const ctx = document.getElementById('interest-chart').getContext('2d');
@@ -163,12 +173,31 @@
                 data: chartData,
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Intérêts mensuels gagnés (Ar)'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toFixed(0) + ' Ar';
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Montant (€)'
+                                text: 'Montant (Ar)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(0) + ' Ar';
+                                }
                             }
                         },
                         x: {
@@ -182,20 +211,21 @@
             });
         }
 
-        document.getElementById('apply-filters').addEventListener('click', function () {
-            const start = document.getElementById('start-month').value;
-            const end = document.getElementById('end-month').value;
+        document.getElementById("filter-form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const start = document.getElementById("start-month").value;
+            const end = document.getElementById("end-month").value;
             loadInterests(start, end);
         });
 
-        // Charger les données au démarrage
-        window.onload = function () {
-            loadInterests();
-        };
+        // Charger les données pour le mois en cours par défaut
+        window.addEventListener("DOMContentLoaded", function() {
+            const now = new Date();
+            const currentMonth = now.toISOString().slice(0, 7);
+            document.getElementById("start-month").value = currentMonth;
+            document.getElementById("end-month").value = currentMonth;
+            loadInterests(currentMonth, currentMonth);
+        });
     </script>
 </body>
-
-<footer>
-  <p>Etablissement financier et prêt bancaire - Gestion des fonds</p>
-</footer>
 </html>

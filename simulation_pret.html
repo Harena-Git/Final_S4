@@ -33,19 +33,23 @@
       <form id="simulation-form">
         <div class="form-row">
           <div class="form-group">
-            <label for="sim-client-id">ID Client</label>
-            <input type="number" id="sim-client-id" required />
+            <label for="sim-client-id">Client</label>
+            <select id="sim-client-id" required>
+              <option value="">Sélectionnez un client</option>
+            </select>
           </div>
           <div class="form-group">
-            <label for="sim-loan-type-id">Type de prêt (ID)</label>
-            <input type="number" id="sim-loan-type-id" required />
+            <label for="sim-loan-type-id">Type de prêt</label>
+            <select id="sim-loan-type-id" required>
+              <option value="">Sélectionnez un type de prêt</option>
+            </select>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="sim-amount">Montant (€)</label>
-            <input type="number" id="sim-amount" step="0.01" min="0" required />
+            <label for="sim-amount">Montant (Ar)</label>
+            <input type="number" id="sim-amount" step="1" min="0" required />
           </div>
           <div class="form-group">
             <label for="sim-duration">Durée (en mois)</label>
@@ -91,12 +95,39 @@
       spinner.style.display = loading ? "inline-block" : "none";
     }
 
-    // Charger toutes les simulations
+    function chargerOptions() {
+      // Charger les clients
+      fetch("/Final_S4/ws/clients")
+        .then(response => response.json())
+        .then(clients => {
+          const select = document.getElementById("sim-client-id");
+          clients.forEach(client => {
+            const option = document.createElement("option");
+            option.value = client.id;
+            option.textContent = `${client.nom} ${client.prenom}`;
+            select.appendChild(option);
+          });
+        });
+
+      // Charger les types de prêt
+      fetch("/Final_S4/ws/loan_types")
+        .then(response => response.json())
+        .then(loanTypes => {
+          const select = document.getElementById("sim-loan-type-id");
+          loanTypes.forEach(type => {
+            const option = document.createElement("option");
+            option.value = type.id;
+            option.textContent = `${type.name} (${type.interest_rate}%)`;
+            select.appendChild(option);
+          });
+        });
+    }
+
     function chargerSimulations() {
       const container = document.getElementById("simulations-list");
       container.innerHTML = "<p>Chargement en cours...</p>";
 
-      fetch("/ws/loan_simulations")
+      fetch("/Final_S4/ws/loan_simulations")
         .then((response) => {
           if (!response.ok) throw new Error("Erreur réseau");
           return response.json();
@@ -114,7 +145,7 @@
                   <th>ID</th>
                   <th>Client</th>
                   <th>Type de prêt</th>
-                  <th>Montant (€)</th>
+                  <th>Montant (Ar)</th>
                   <th>Durée (mois)</th>
                   <th>Statut</th>
                   <th>Actions</th>
@@ -129,7 +160,7 @@
                 <td>${sim.id}</td>
                 <td>${sim.client_id}</td>
                 <td>${sim.loan_type_id}</td>
-                <td>${sim.amount.toFixed(2)}</td>
+                <td>${sim.amount.toFixed(0)} Ar</td>
                 <td>${sim.duration_months}</td>
                 <td>${sim.validation_status}</td>
                 <td>
@@ -151,7 +182,6 @@
         });
     }
 
-    // Envoyer une nouvelle simulation
     document.getElementById("simulation-form").addEventListener("submit", function (e) {
       e.preventDefault();
       setSimLoading(true);
@@ -163,7 +193,7 @@
         duration_months: parseInt(document.getElementById("sim-duration").value, 10)
       };
 
-      fetch("/ws/loan_simulations", {
+      fetch("/Final_S4/ws/loan_simulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -184,9 +214,8 @@
         .finally(() => setSimLoading(false));
     });
 
-    // Valider une simulation
     function validerSimulation(id) {
-      fetch(`/ws/loan_simulations/${id}`, {
+      fetch(`/Final_S4/ws/loan_simulations/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ validation_status: "approved" })
@@ -202,8 +231,10 @@
         .catch((e) => showMessage(e.message, "error"));
     }
 
-    window.addEventListener("DOMContentLoaded", chargerSimulations);
+    window.addEventListener("DOMContentLoaded", function() {
+      chargerOptions();
+      chargerSimulations();
+    });
   </script>
 </body>
-
 </html>
