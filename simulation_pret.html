@@ -1,17 +1,23 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Simulation de prêts</title>
   <link rel="stylesheet" href="theme.css" />
 </head>
+
 <body>
   <header>
     <nav>
       <ul>
         <li><a href="index.html">Accueil</a></li>
+        <li><a href="fonds.html">Gestion des fonds</a></li>
+        <li><a href="loan_types.html">Gestion des types de prêt</a></li>
         <li><a href="client_loans.html">Gestion des prêts clients</a></li>
+        <li><a href="monthly_interests.html">Intérêts mensuels</a></li>
+        <li><a href="amortissement.html">Simulation d'amortissement</a></li>
         <li><a href="simulation_pret.html">Simulation de prêts</a></li>
       </ul>
     </nav>
@@ -127,11 +133,10 @@
                 <td>${sim.duration_months}</td>
                 <td>${sim.validation_status}</td>
                 <td>
-                  ${
-                    sim.validation_status === "pending"
-                      ? `<button onclick="validerSimulation(${sim.id})" class="btn btn-success btn-sm">Valider</button>`
-                      : "-"
-                  }
+                  ${sim.validation_status === "pending"
+                ? `<button onclick="validerSimulation(${sim.id})" class="btn btn-success btn-sm">Valider</button>`
+                : "-"
+              }
                 </td>
               </tr>
             `;
@@ -200,4 +205,5 @@
     window.addEventListener("DOMContentLoaded", chargerSimulations);
   </script>
 </body>
+
 </html>
