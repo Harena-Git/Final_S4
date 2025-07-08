@@ -97,7 +97,7 @@
 
     function chargerOptions() {
       // Charger les clients
-      fetch("/Final_S4/ws/clients")
+      fetch("/ws/clients")
         .then(response => response.json())
         .then(clients => {
           const select = document.getElementById("sim-client-id");
@@ -110,7 +110,7 @@
         });
 
       // Charger les types de prêt
-      fetch("/Final_S4/ws/loan_types")
+      fetch("/ws/loan_types")
         .then(response => response.json())
         .then(loanTypes => {
           const select = document.getElementById("sim-loan-type-id");
@@ -127,7 +127,7 @@
       const container = document.getElementById("simulations-list");
       container.innerHTML = "<p>Chargement en cours...</p>";
 
-      fetch("/Final_S4/ws/loan_simulations")
+      fetch("/ws/loan_simulations")
         .then((response) => {
           if (!response.ok) throw new Error("Erreur réseau");
           return response.json();
@@ -193,7 +193,7 @@
         duration_months: parseInt(document.getElementById("sim-duration").value, 10)
       };
 
-      fetch("/Final_S4/ws/loan_simulations", {
+      fetch("/ws/loan_simulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -215,7 +215,7 @@
     });
 
     function validerSimulation(id) {
-      fetch(`/Final_S4/ws/loan_simulations/${id}`, {
+      fetch(`/ws/loan_simulations/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ validation_status: "approved" })

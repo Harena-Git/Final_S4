@@ -91,7 +91,7 @@
         }
 
         function loadInterests(start = null, end = null) {
-            let url = '/Final_S4/ws/monthly_interests';
+            let url = '/ws/monthly_interests';
             if (start || end) {
                 url += `?start=${start || ''}&end=${end || ''}`;
             }

@@ -105,7 +105,7 @@
       <div class="card" style="margin-top: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h2>Liste des prêts clients</h2>
-          <button class="btn btn-secondary" onclick="window.open('/Final_S4/ws/export_pdf.php', '_blank')">
+          <button class="btn btn-secondary" onclick="window.open('/ws/export_pdf.php', '_blank')">
             Exporter en PDF
           </button>
         </div>
@@ -139,7 +139,7 @@
 
     function chargerOptions() {
       // Charger les clients
-      fetch("/Final_S4/ws/clients")
+      fetch("/ws/clients")
         .then(response => response.json())
         .then(clients => {
           const selects = document.querySelectorAll("#client-id, #search-client-id");
@@ -154,7 +154,7 @@
         });
 
       // Charger les types de prêt
-      fetch("/Final_S4/ws/loan_types")
+      fetch("/ws/loan_types")
         .then(response => response.json())
         .then(loanTypes => {
           const select = document.getElementById("loan-type-id");
@@ -167,7 +167,7 @@
         });
 
       // Charger les fonds
-      fetch("/Final_S4/ws/fonds")
+      fetch("/ws/fonds")
         .then(response => response.json())
         .then(fonds => {
           const select = document.getElementById("fund-id");
@@ -184,7 +184,7 @@
       const container = document.getElementById("client-loans-list");
       container.innerHTML = "<p>Chargement en cours...</p>";
 
-      fetch("/Final_S4/ws/client_loans")
+      fetch("/ws/client_loans")
         .then((response) => {
           if (!response.ok) throw new Error("Erreur réseau");
           return response.json();
@@ -280,7 +280,7 @@
 
       container.innerHTML = "<p>Chargement en cours...</p>";
 
-      fetch(`/Final_S4/ws/client_loans/${clientId}`)
+      fetch(`/ws/client_loans/${clientId}`)
         .then((res) => res.json())
         .then((data) => {
           if (!Array.isArray(data)) {

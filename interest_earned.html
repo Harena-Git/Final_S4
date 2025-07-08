@@ -98,7 +98,7 @@
       const resultsContainer = document.getElementById('results');
       resultsContainer.innerHTML = '<p>Recherche en cours...</p>';
       
-      fetch(`/Final_S4/ws/interest_earned?start=${startMonth}-01&end=${endMonth}-31`)
+      fetch(`/ws/interest_earned?start=${startMonth}-01&end=${endMonth}-31`)
         .then(response => {
           if (!response.ok) throw new Error('Erreur lors de la recherche');
           return response.json();
