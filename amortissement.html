@@ -2,13 +2,28 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Simulation d'amortissement - Annuité constante avec assurance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulation d'amortissement</title>
   <link rel="stylesheet" href="theme.css">
   <style>
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; }
-    th { background: #f0f0f0; }
-    td:first-child, th:first-child { text-align: center; }
+    .amortissement-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    .amortissement-table th, 
+    .amortissement-table td {
+      padding: 0.75rem;
+      border: 1px solid #dee2e6;
+      text-align: right;
+    }
+    .amortissement-table th {
+      background-color: #f8f9fa;
+      text-align: center;
+    }
+    .amortissement-table tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
   </style>
 </head>
 <body>
@@ -25,55 +40,201 @@
       </ul>
     </nav>
   </header>
-  <h1>Simulation de remboursement (annuité constante avec assurance)</h1>
-  <form id="amortissement-form">
-    <label for="amount">Montant du prêt (€):</label>
-    <input type="number" id="amount" required>
-    <label for="rate">Taux d'intérêt annuel (%):</label>
-    <input type="number" id="rate" step="0.01" required>
-    <label for="duration">Durée (mois):</label>
-    <input type="number" id="duration" required>
-    <label for="insurance">Taux d'assurance (% du capital):</label>
-    <input type="number" id="insurance" step="0.01" value="0">
-    <button type="submit">Calculer</button>
-  </form>
-  <div id="result"></div>
-  <button onclick="window.location.href='index.html'">Retour à l'accueil</button>
+
+  <main class="container">
+    <h1>Simulation d'amortissement</h1>
+    
+    <div id="message-container"></div>
+
+    <section class="card">
+      <h2>Paramètres du prêt</h2>
+      <form id="amortissement-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="amount">Montant du prêt (Ar)</label>
+            <input type="number" id="amount" step="1" min="1" required>
+          </div>
+          <div class="form-group">
+            <label for="duration">Durée (mois)</label>
+            <input type="number" id="duration" min="1" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="rate">Taux d'intérêt annuel (%)</label>
+            <input type="number" id="rate" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label for="insurance">Taux d'assurance (% du capital)</label>
+            <input type="number" id="insurance" step="0.01" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            <span id="submit-text">Calculer</span>
+            <span id="submit-loading" class="loading" style="display: none;"></span>
+          </button>
+          <button type="reset" class="btn btn-secondary">Réinitialiser</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card" style="margin-top: 2rem; display: none;" id="results-section">
+      <h2>Résultats de la simulation</h2>
+      
+      <div class="summary">
+        <h3>Récapitulatif</h3>
+        <div id="loan-summary" class="summary-grid">
+          <!-- Rempli dynamiquement -->
+        </div>
+      </div>
+
+      <div class="table-container" style="margin-top: 2rem; overflow-x: auto;">
+        <h3>Tableau d'amortissement</h3>
+        <div id="amortissement-result"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2023 Etablissement financier - Simulation d'amortissement</p>
+  </footer>
+
   <script>
-    document.getElementById('amortissement-form').addEventListener('submit', function(e) {
+    function showMessage(message, type = "success") {
+      const container = document.getElementById("message-container");
+      container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      setTimeout(() => (container.innerHTML = ""), 5000);
+    }
+
+    function setLoading(loading) {
+      const btn = document.getElementById("submit-btn");
+      const text = document.getElementById("submit-text");
+      const spinner = document.getElementById("submit-loading");
+
+      btn.disabled = loading;
+      text.style.display = loading ? "none" : "inline-block";
+      spinner.style.display = loading ? "inline-block" : "none";
+    }
+
+    function formatMoney(amount) {
+      return new Intl.NumberFormat('fr-MG', {
+        style: 'decimal',
+        maximumFractionDigits: 0
+      }).format(amount) + ' Ar';
+    }
+
+    document.getElementById("amortissement-form").addEventListener("submit", function(e) {
       e.preventDefault();
-      const amount = parseFloat(document.getElementById('amount').value);
-      const rate = parseFloat(document.getElementById('rate').value) / 100 / 12;
-      const duration = parseInt(document.getElementById('duration').value);
-      const insuranceRate = parseFloat(document.getElementById('insurance').value) / 100;
-      if (isNaN(amount) || isNaN(rate) || isNaN(duration) || isNaN(insuranceRate) || amount <= 0 || rate < 0 || duration <= 0 || insuranceRate < 0) {
-        document.getElementById('result').innerHTML = "<p style='color:red'>Veuillez saisir des valeurs valides.</p>";
+      setLoading(true);
+
+      const amount = parseFloat(document.getElementById("amount").value);
+      const rate = parseFloat(document.getElementById("rate").value) / 100 / 12;
+      const duration = parseInt(document.getElementById("duration").value);
+      const insuranceRate = parseFloat(document.getElementById("insurance").value) / 100;
+
+      if (isNaN(amount) || isNaN(rate) || isNaN(duration) || isNaN(insuranceRate) || 
+          amount <= 0 || rate < 0 || duration <= 0 || insuranceRate < 0) {
+        showMessage("Veuillez saisir des valeurs valides", "error");
+        setLoading(false);
         return;
       }
+
+      // Calcul de l'annuité constante
       const annuite = rate === 0 ? amount / duration : amount * rate / (1 - Math.pow(1 + rate, -duration));
       const assuranceMensuelle = amount * insuranceRate / 12;
+      const mensualiteTotale = annuite + assuranceMensuelle;
+      
       let capitalRestant = amount;
-      let html = '<table><tr><th>Mois</th><th>Mensualité (€)</th><th>Assurance (€)</th><th>Total à payer (€)</th><th>Intérêts (€)</th><th>Capital remboursé (€)</th><th>Capital restant (€)</th></tr>';
-      for(let i=1; i<=duration; i++) {
+      let totalInterets = 0;
+      let totalAssurance = 0;
+
+      // Générer le tableau d'amortissement
+      let html = `
+        <table class="amortissement-table">
+          <thead>
+            <tr>
+              <th>Mois</th>
+              <th>Mensualité (Ar)</th>
+              <th>Assurance (Ar)</th>
+              <th>Total à payer (Ar)</th>
+              <th>Intérêts (Ar)</th>
+              <th>Capital remboursé (Ar)</th>
+              <th>Capital restant (Ar)</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      for(let i = 1; i <= duration; i++) {
         const interet = capitalRestant * rate;
         const capital = annuite - interet;
         capitalRestant -= capital;
-        html += `<tr>
-          <td>${i}</td>
-          <td>${annuite.toFixed(2)}</td>
-          <td>${assuranceMensuelle.toFixed(2)}</td>
-          <td>${(annuite + assuranceMensuelle).toFixed(2)}</td>
-          <td>${interet.toFixed(2)}</td>
-          <td>${capital.toFixed(2)}</td>
-          <td>${capitalRestant > 0 ? capitalRestant.toFixed(2) : '0.00'}</td>
-        </tr>`;
+        
+        totalInterets += interet;
+        totalAssurance += assuranceMensuelle;
+
+        html += `
+          <tr>
+            <td>${i}</td>
+            <td>${formatMoney(annuite)}</td>
+            <td>${formatMoney(assuranceMensuelle)}</td>
+            <td>${formatMoney(annuite + assuranceMensuelle)}</td>
+            <td>${formatMoney(interet)}</td>
+            <td>${formatMoney(capital)}</td>
+            <td>${capitalRestant > 0 ? formatMoney(capitalRestant) : '0 Ar'}</td>
+          </tr>
+        `;
       }
-      html += '</table>';
-      document.getElementById('result').innerHTML = html;
+
+      html += `</tbody></table>`;
+      
+      // Afficher le récapitulatif
+      const summaryHtml = `
+        <div class="summary-item">
+          <span class="summary-label">Montant du prêt:</span>
+          <span class="summary-value">${formatMoney(amount)}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Durée:</span>
+          <span class="summary-value">${duration} mois</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Taux d'intérêt:</span>
+          <span class="summary-value">${(rate * 12 * 100).toFixed(2)}%</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Mensualité:</span>
+          <span class="summary-value">${formatMoney(mensualiteTotale)}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total intérêts:</span>
+          <span class="summary-value">${formatMoney(totalInterets)}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total assurance:</span>
+          <span class="summary-value">${formatMoney(totalAssurance)}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Coût total:</span>
+          <span class="summary-value">${formatMoney(amount + totalInterets + totalAssurance)}</span>
+        </div>
+      `;
+
+      document.getElementById("loan-summary").innerHTML = summaryHtml;
+      document.getElementById("amortissement-result").innerHTML = html;
+      document.getElementById("results-section").style.display = "block";
+      
+      setLoading(false);
+      showMessage("Simulation terminée avec succès");
+    });
+
+    // Initialisation
+    document.getElementById("amortissement-form").addEventListener("reset", function() {
+      document.getElementById("results-section").style.display = "none";
     });
   </script>
 </body>
-<footer>
-  <p>Etablissement financier - Simulation d'amortissement</p>
-</footer>
 </html>
