@@ -198,7 +198,7 @@ window.addEventListener("DOMContentLoaded", function() {
       const container = document.getElementById("client-loans-list");
       container.innerHTML = "<p>Chargement en cours...</p>";
 
-      fetch("/Final_S4/ws/client_loans")
+      fetch("/ws/client_loans")
         .then((response) => {
           if (!response.ok) throw new Error("Erreur réseau");
           return response.json();
@@ -294,7 +294,7 @@ window.addEventListener("DOMContentLoaded", function() {
 
       container.innerHTML = "<p>Chargement en cours...</p>";
 
-      fetch(`/Final_S4/ws/client_loans/${clientId}`)
+      fetch(`/ws/client_loans/${clientId}`)
         .then((res) => res.json())
         .then((data) => {
           if (!Array.isArray(data)) {

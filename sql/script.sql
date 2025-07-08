@@ -47,6 +47,22 @@ CREATE TABLE IF NOT EXISTS loan_simulations (
     FOREIGN KEY (client_id) REFERENCES clients(id),
     FOREIGN KEY (loan_type_id) REFERENCES loan_types(id)
 );
+
+CREATE TABLE IF NOT EXISTS remboursement (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    client_loan_id INT NOT NULL,
+    montant DECIMAL(10,2) NOT NULL,
+    date_prevue DATE NOT NULL,
+    date_effectue DATE,
+    statut ENUM('en attente', 'payé', 'en retard') DEFAULT 'en attente',
+    numero_echeance INT NOT NULL,
+    delai_premier_remboursement INT DEFAULT 0 COMMENT 'Délai en mois avant le premier remboursement',
+    montant_interet DECIMAL(10,2) NOT NULL,
+    montant_principal DECIMAL(10,2) NOT NULL,
+    solde_restant DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (client_loan_id) REFERENCES client_loans(id)
+);
+
 -- Donnees
 -- Client
 INSERT INTO client (nom, prenom, email, age) VALUES
