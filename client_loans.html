@@ -33,7 +33,6 @@
               <label for="client-id">ID Client</label>
               <input type="number" id="client-id" required>
             </div>
-            
             <div class="form-group">
               <label for="loan-type-id">Type de prêt (ID)</label>
               <input type="number" id="loan-type-id" required>
@@ -45,7 +44,6 @@
               <label for="fund-id">Fond (ID)</label>
               <input type="number" id="fund-id" required>
             </div>
-            
             <div class="form-group">
               <label for="amount">Montant (€)</label>
               <input type="number" id="amount" step="0.01" min="0" required>
@@ -57,7 +55,6 @@
               <label for="start-date">Date début</label>
               <input type="date" id="start-date" required>
             </div>
-            
             <div class="form-group">
               <label for="end-date">Date fin (optionnel)</label>
               <input type="date" id="end-date">
@@ -83,7 +80,12 @@
       </div>
       
       <div class="card">
-        <h2>Liste des prêts clients</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Liste des prêts clients</h2>
+          <button class="btn btn-secondary" onclick="window.open('/Final_S4/ws/export_pdf.php', '_blank')">
+            Exporter en PDF
+          </button>
+        </div>
         <div id="client-loans-list" class="table-responsive">
           <p>Chargement en cours...</p>
         </div>
