@@ -46,6 +46,16 @@ class ClientLoansController {
         }
     }
 
+    // ✅ Méthode pour obtenir tous les prêts d’un client donné
+    public static function getByClient($client_id) {
+        try {
+            $client_loans = ClientLoans::getByClient($client_id);
+            Flight::json($client_loans);
+        } catch (Exception $e) {
+            Flight::json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public static function update($id) {
         $data = Flight::request()->data;
 

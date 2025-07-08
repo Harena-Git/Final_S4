@@ -107,3 +107,15 @@ Flight::route('DELETE /client_loans/@id', function($id) {
         Flight::json(['error' => $e->getMessage()], 500);
     }
 });
+Flight::route('GET /client_loans/@client_id', function($client_id) {
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT * FROM client_loans WHERE client_id = ?");
+        $stmt->execute([$client_id]);
+        $loans = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        Flight::json($loans);
+    } catch (Exception $e) {
+        Flight::json(['error' => $e->getMessage()], 500);
+    }
+});
+

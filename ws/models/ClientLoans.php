@@ -15,6 +15,14 @@ class ClientLoans {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // 🔥 Ajout pour récupérer tous les prêts d’un client donné
+    public static function getByClient($client_id) {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT * FROM client_loans WHERE client_id = ?");
+        $stmt->execute([$client_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public static function update($id, $data) {
         $db = getDB();
 
